@@ -16,21 +16,19 @@ And the graph json follows this structure:
 
 ````
 {
-    "graph": {
-        "nodes": [
-            {
-                "id": "A",
-            },
-            {
-                "id": "B",
-            }
-        ],
-        "edges": [
-            {
-                "source": "A",
-                "target": "B"
-            }
-        ]
-    }
+    "nodes": [
+        {
+            "id": "A"
+        },
+        {
+            "id": "B"
+        }
+    ],
+    "edges": [
+        {
+            "source": "A",
+            "target": "B"
+        }
+    ]
 }
 ````

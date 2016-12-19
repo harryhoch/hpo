@@ -65,22 +65,20 @@ console.log("Total " + edges.length + " edges");
 // the graph json will look like this:
 /*
 {
-    "graph": {
-        "nodes": [
-            {
-                "id": "A"
-            },
-            {
-                "id": "B"
-            }
-        ],
-        "edges": [
-            {
-                "source": "A",
-                "target": "B"
-            }
-        ]
-    }
+    "nodes": [
+        {
+            "id": "A"
+        },
+        {
+            "id": "B"
+        }
+    ],
+    "edges": [
+        {
+            "source": "A",
+            "target": "B"
+        }
+    ]
 }
 */
 graph = {nodes: nodes, edges: edges};
