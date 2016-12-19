@@ -24,7 +24,7 @@ for (var j = 0; j < hpo.classAttribute.length; j++) {
     // Check super classes
     if (typeof(hpo.classAttribute[j].superClasses) !== 'undefined') {
         hpo.classAttribute[j].superClasses.forEach(function(classId) {
-            var edge = {source: getHP(classId), target: hpo.classAttribute[j].iri.replace(iri, ''), distance: 1};
+            var edge = {source: getHP(classId), target: hpo.classAttribute[j].iri.replace(iri, '')};
             // Only add this new edge if not presents
             if (edges.indexOf(edge) === -1) {
                 edges.push(edge);
@@ -35,7 +35,7 @@ for (var j = 0; j < hpo.classAttribute.length; j++) {
     // Check sub classes
     if (typeof(hpo.classAttribute[j].subClasses) !== 'undefined') {
         hpo.classAttribute[j].subClasses.forEach(function(classId) {
-            var edge = {source: hpo.classAttribute[j].iri.replace(iri, ''), target: getHP(classId), distance: 1};
+            var edge = {source: hpo.classAttribute[j].iri.replace(iri, ''), target: getHP(classId)};
             // Only add this new edge if not presents
             if (edges.indexOf(edge) === -1) {
                 edges.push(edge);
