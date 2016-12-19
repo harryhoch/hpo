@@ -9,7 +9,7 @@ java -jar owl2vowl.jar -file ho.owl
 Then we parse the `hp.json` and create a graph json file `graph.json`.
 
 ````
-node hpo.js
+node graph.js
 ````
 
 And the graph json follows this structure:
