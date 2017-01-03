@@ -9,6 +9,8 @@ var graph = {};
 
 var nodes = {};
 
+var tree = [];
+
 var edges = [];
 
 function getHP(classId) {
@@ -21,9 +23,14 @@ function getHP(classId) {
 
 // Get all the edges
 for (var j = 0; j < hpo.classAttribute.length; j++) {
+    var node = {id: getHP(hpo.classAttribute[j].id), label: hpo.classAttribute[j].label.undefined, superClasses: [], subClasses: []};
+
     // Check super classes
     if (typeof(hpo.classAttribute[j].superClasses) !== 'undefined') {
         hpo.classAttribute[j].superClasses.forEach(function(classId) {
+            // Add HPO id to the superClasses array
+            node.superClasses.push(getHP(classId));
+
             var edge = {source: getHP(classId), target: hpo.classAttribute[j].iri.replace(iri, '')};
             // Only add this new edge if not presents
             if (edges.indexOf(edge) === -1) {
@@ -35,6 +42,9 @@ for (var j = 0; j < hpo.classAttribute.length; j++) {
     // Check sub classes
     if (typeof(hpo.classAttribute[j].subClasses) !== 'undefined') {
         hpo.classAttribute[j].subClasses.forEach(function(classId) {
+            // Add HPO id to the subClasses array
+            node.subClasses.push(getHP(classId));
+
             var edge = {source: hpo.classAttribute[j].iri.replace(iri, ''), target: getHP(classId)};
             // Only add this new edge if not presents
             if (edges.indexOf(edge) === -1) {
@@ -42,6 +52,8 @@ for (var j = 0; j < hpo.classAttribute.length; j++) {
             }
         });
     }
+
+    tree.push(node);
 }
 
 // Compute the nodes array from the edges
@@ -62,37 +74,18 @@ console.log("Total " + nodes.length + " nodes");
 console.log("Total " + edges.length + " edges");
 
 // Compose the graph structure
-// the graph json will look like this:
-/*
-{
-    "nodes": [
-        {
-            "id": "A"
-        },
-        {
-            "id": "B"
-        }
-    ],
-    "edges": [
-        {
-            "source": "A",
-            "target": "B"
-        }
-    ]
-}
-*/
-graph = {nodes: nodes, edges: edges};
+graph = {nodes: nodes, edges: edges, tree: tree};
 
 // Write the grap json into a json file
 // JSON.stringify's third parameter defines white-space insertion for pretty-printing
 var graphJson = JSON.stringify(graph, null, 4);
 
-var outputFilename = 'graph.json';
+var outputFilename = 'tree.json';
 fs.writeFile(outputFilename, graphJson, 'utf8' ,function(err){
     if(err) {
         console.log(err);
     } else {
-        console.log("Graph JSON saved to " + outputFilename);
+        console.log("Tree JSON saved to " + outputFilename);
     }
 });
 
