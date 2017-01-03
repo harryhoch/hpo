@@ -9,9 +9,10 @@ var graph = {};
 
 var nodes = {};
 
-var tree = [];
-
 var edges = [];
+
+// This is used to build the treemap structure
+var tree = [];
 
 function getHP(classId) {
     for (k = 0; k < hpo.classAttribute.length; k++) {

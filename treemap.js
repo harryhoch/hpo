@@ -12,6 +12,7 @@ function dfs(id, tree) {
     for (var n = 0; n < tree.length; n++) {
         if (tree[n].id === id) {
             if (typeof(visited[id]) === 'undefined') {
+                // Mark as visited
                 visited[id] = true;
                 
                 // Each treemap[id] is an object
@@ -37,6 +38,7 @@ function dfs(id, tree) {
     }
 }
 
+// Start from HP_0000118, use it as root
 var finalTreemap = dfs('HP_0000118', hpoTree);
 
 
