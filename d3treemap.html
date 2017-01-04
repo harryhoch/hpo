@@ -2,12 +2,22 @@
 <head>
 <style>
 
-form {
-font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-}
-
 svg {
 font: 10px sans-serif;
+}
+
+.node {
+  box-sizing: border-box;
+  line-height: 1em;
+  overflow: hidden;
+  position: absolute;
+  white-space: pre;
+  background: #ddd;
+}
+
+.node-label{
+  margin: 4px;
+  color:#222;
 }
 
 </style>
@@ -43,44 +53,64 @@ var treemap = d3.treemap()
 d3.json("treemap.json", function(error, data) {
     if (error) throw error;
 
+// this is the treemap.json data
+console.log(data);
+
     // Constructs a root node from the specified hierarchical data.
-    var root = d3.hierarchy(data)
+    var root = d3.hierarchy(data);
+
+// The returned node and each descendant has the following properties: data, depth, height, parent, children, value
+console.log(root);
+
+    // https://github.com/d3/d3-hierarchy/#node_each
+    root.each(function(d) { 
+        if (d.depth > 0) {
+          d.children = [];
+          d.data.children = [];
+        }
+    });
+
+console.log(root);
+
+var newRoot = d3.hierarchy(root)
         .sum(sumByCount)
         .sort(function(a, b) { 
+            // sort nodes by descending height (greatest distance from any descendant leaf) and then descending value
             return b.height - a.height || b.value - a.value; 
         });
 
-    treemap(root);
+    // Lays out the specified root hierarchy
+    // You must call root.sum before passing the hierarchy to the treemap layout. 
+    // You probably also want to call root.sort to order the hierarchy before computing the layout.
+    // Also assigns the following properties on root and its descendants: x0, y0, x1, y1
+    treemap(newRoot);
 
-    var cell = svg.selectAll("g")
-        .data(root.leaves())
-        .enter().append("g")
-        .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; });
+console.log(newRoot.leaves());
 
-    cell.append("rect")
-        .attr("id", function(d) { return d.data.id; })
-        .attr("width", function(d) { return d.x1 - d.x0; })
-        .attr("height", function(d) { return d.y1 - d.y0; })
-        .attr("fill", function(d) { return color(d.parent.data.id); });
-
-    // The <clipPath> SVG element defines a clipping path. A clipping path is used/referenced using the clip-path property.
-    cell.append("clipPath")
-        .attr("id", function(d) { return "clip-" + d.data.id; })
-        .append("use")
-        .attr("xlink:href", function(d) { return "#" + d.data.id; });
-    
-    // Text of each rectangle
-    cell.append("text")
-        .attr("clip-path", function(d) { 
-            return "url(#clip-" + d.data.id + ")"; 
+    var node = d3.select("body")
+        .selectAll(".node")
+        .data(newRoot.leaves())// Use the newroot to render
+        .enter().append("div")
+        .attr("id", function(d) { return d.data.data.id; })
+        .attr("class", "node")
+        .attr("title", function(d) { 
+            return d.data.data.name + ' [' + d.data.data.id + ']'; 
         })
+        .style("left", function(d) { return d.x0 + "px"; })
+        .style("top", function(d) { return d.y0 + "px"; })
+        .style("width", function(d) { return d.x1 - d.x0 + "px"; })
+        .style("height", function(d) { return d.y1 - d.y0 + "px"; });
+
+    // Text of each rectangle
+    node.append("div")
+        .attr("class", "node-label")
         .text(function(d) { 
-            return d.data.name; 
+            return d.data.data.name; 
         });
 
     // Show title toltip (full phenotype name and [id]) on mouse over. 
-    cell.append("title")
-        .text(function(d) { return d.data.name + ' [' + d.data.id + ']'; });
+    node.append("title")
+        .text(function(d) { return d.data.data.name + ' [' + d.data.data.id + ']'; });
 
 });
 
