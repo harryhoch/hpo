@@ -32,3 +32,13 @@ And the graph json follows this structure:
     ]
 }
 ````
+
+Then we need to create a treemap structure
+
+````
+node treemap.js
+````
+
+And this will get us a structure similar to the `flare.json`.
+
+`d3treemap.html` renders the `treemap.json` into a treemap view.
