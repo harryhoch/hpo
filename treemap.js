@@ -18,7 +18,7 @@ function dfs(id, tree) {
                 // Each treemap[id] is an object
                 treemap[id] = {};
                 treemap[id].id = tree[n].id;
-                treemap[id].name = tree[n].label;
+                treemap[id].name = tree[n].name;
                 treemap[id].children = [];
 
                 // Build children if there's any, otherwise leave it empty array

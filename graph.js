@@ -24,7 +24,11 @@ function getHP(classId) {
 
 // Get all the edges
 for (var j = 0; j < hpo.classAttribute.length; j++) {
-    var node = {id: getHP(hpo.classAttribute[j].id), label: hpo.classAttribute[j].label.undefined, superClasses: [], subClasses: []};
+    
+    // HP name is either in hpo.classAttribute[j].label.en or hpo.classAttribute[j].label.undefined
+    var name = typeof(hpo.classAttribute[j].label.en) !== 'undefined' ? hpo.classAttribute[j].label.en : hpo.classAttribute[j].label.undefined;
+
+    var node = {id: getHP(hpo.classAttribute[j].id), name: name, superClasses: [], subClasses: []};
 
     // Check super classes
     if (typeof(hpo.classAttribute[j].superClasses) !== 'undefined') {
@@ -77,11 +81,11 @@ console.log("Total " + edges.length + " edges");
 // Compose the graph structure
 graph = {nodes: nodes, edges: edges, tree: tree};
 
-// Write the grap json into a json file
+// Write the graph json into a json file
 // JSON.stringify's third parameter defines white-space insertion for pretty-printing
 var graphJson = JSON.stringify(graph, null, 4);
 
-var outputFilename = 'tree.json';
+var outputFilename = 'graph.json';
 fs.writeFile(outputFilename, graphJson, 'utf8' ,function(err){
     if(err) {
         console.log(err);
