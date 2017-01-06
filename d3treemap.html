@@ -48,7 +48,8 @@ d3.json("treemap.json", function(error, origData) {
 	console.log("Complete raw treemap data:");
 	console.log(origData);
 
-    // I don't understand the purpose
+    // This can be used to sum the IC score once we have it
+    // Just use the count for now
     // https://github.com/d3/d3-hierarchy#node_sum
     var sumByCount = function(d) {
 	    return d.children ? 0 : 1;
@@ -58,7 +59,7 @@ d3.json("treemap.json", function(error, origData) {
     // The specified data must be an object representing the root node. 
     var constructHierarchy = function(data) {
         var root = d3.hierarchy(data)
-	        .sum(sumByCount) // Must use sum here, https://github.com/d3/d3-hierarchy#node_sum
+	        .sum(sumByCount) // Must use sum before passing the hierarchy data to the treemap()
 	        .sort(function(a, b) { 
 	            // sort nodes by descending height (greatest distance from any descendant leaf) and then descending value
 	            return b.height - a.height || b.value - a.value; 
