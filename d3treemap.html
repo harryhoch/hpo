@@ -6,10 +6,10 @@ svg {
 font: 10px sans-serif;
 }
 
-
 </style>
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
 
 </head>
 
@@ -17,12 +17,11 @@ font: 10px sans-serif;
 
 <svg id= "treemapSvg" width="960" height="570"></svg>
 
-
 <script>
 
 var svg = d3.select("#treemapSvg");
-var width = +svg.attr("width");
-var height = +svg.attr("height");
+var width = svg.attr("width");
+var height = svg.attr("height");
 
 var fader = function(color) { 
     return d3.interpolateRgb(color, "#fff")(0.2); 
@@ -35,80 +34,140 @@ var color = d3.scaleOrdinal(d3.schemeCategory20.map(fader));
 var treemap = d3.treemap()
     .tile(d3.treemapResquarify) // This is the default with the golden ratio
     .size([width, height])
-    .round(true)
-    .paddingInner(1);
+    .round(true) // Set rounding state to true to enable it. What does this mean?
+    .paddingInner(2); // We can also set outer padding
 
-d3.json("treemap.json", function(error, data) {
+// The principle behind d3.json() is to do everything in this function, 
+// which will be executed when the json is loaded
+d3.json("treemap.json", function(error, origData) {
     if (error) throw error;
 
-	// this is the treemap.json data
-	console.log(data);
+    // This is the complete treemap.json raw data
+	console.log("Complete raw treemap data:");
+	console.log(origData);
 
-    // Constructs a root node from the specified hierarchical data.
-    var root = d3.hierarchy(data);
+    // I don't understand the purpose
+    // https://github.com/d3/d3-hierarchy#node_sum
+    var sumByCount = function(d) {
+	    return d.children ? 0 : 1;
+	};
 
-	// The returned node and each descendant has the following properties: data, depth, height, parent, children, value
-	console.log(root);
+    // Constructs a root node from the specified hierarchical data. 
+    // The specified data must be an object representing the root node. 
+    var constructHierarchy = function(data) {
+        var root = d3.hierarchy(data)
+	        .sum(sumByCount) // Must use sum here, https://github.com/d3/d3-hierarchy#node_sum
+	        .sort(function(a, b) { 
+	            // sort nodes by descending height (greatest distance from any descendant leaf) and then descending value
+	            return b.height - a.height || b.value - a.value; 
+	        });
 
-    // https://github.com/d3/d3-hierarchy/#node_each
-    root.each(function(d) { 
-        if (d.depth > 0) {
-          d.children = [];
-          d.data.children = [];
-        }
-    });
+	    return root;
+    };
 
-	console.log(root);
+    // Render the treemap based on a given root data object
+    var show = function(rootData, depth) {
+	    console.log("Generating treemap");
 
-	var newRoot = d3.hierarchy(root)
-        .sum(sumByCount)
-        .sort(function(a, b) { 
-            // sort nodes by descending height (greatest distance from any descendant leaf) and then descending value
-            return b.height - a.height || b.value - a.value; 
-        });
+	    var root; 
 
-    // Lays out the specified root hierarchy
-    // You must call root.sum before passing the hierarchy to the treemap layout. 
-    // You probably also want to call root.sort to order the hierarchy before computing the layout.
-    // Also assigns the following properties on root and its descendants: x0, y0, x1, y1
-    treemap(newRoot);
+        // Made a deep copy via jquery
+        // so the input data will not be changed by the change made to root
+	    root = $.extend(true, {}, rootData);
 
-    console.log(newRoot.leaves());
+	    // Constructs a root node from the specified hierarchical data
+	    // The returned node and each descendant has the following properties: data, depth, height, parent, children, value
+	    // We need to use the added properties to midify the structure
+	    console.log("Constructing hierarchical data with d3 ...");
+	    var rootNode = constructHierarchy(root);
 
-    var node = svg.selectAll(".node")
-        .data(newRoot.leaves())// Use the newRoot to render
-        .enter().append("g")
-        .attr("id", function(d) { return d.data.data.id; })
-        .attr("class", "node")
-        .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; });
+		
+		console.log("D3 Hierarchy constructed data, before modification:");
+		console.log(rootNode);
 
-    node.append("rect")
-		.attr("id", function(d) { return d.data.id; })
-		.attr("width", function(d) { return d.x1 - d.x0; })
-		.attr("height", function(d) { return d.y1 - d.y0; })
-		.attr("fill", function(d) { return color(d.data.data.id); });
+        // Deep copy of the subtree starting at this node via d3 built-in method
+        // https://github.com/d3/d3-hierarchy#node_copy
+        // So changes made to copiedRootNode won't affect rootNode
+        var copiedRootNode = rootNode.copy();
 
-    // Text of each rectangle
-    node.append("text")
-        .attr("class", "node-name")
-        .selectAll("tspan")
-        .data(function(d) { return d.data.data.name.split(' '); }) // one word per line
-        .enter().append("tspan")
-        .attr("x", 5)
-        .attr("y", function(d, i) { return 15 + i * 10; })
-        .text(function(d) { 
-            return d; 
-        });
+        // Modify the children so they won't show up in the current rendering of treemap
+	    // https://github.com/d3/d3-hierarchy/#node_each
+	    copiedRootNode.each(function(d) { 
+	        // All subclasses still stay unchanged
+	        if (d.depth === depth) {
+				// Copy the data first
+            	d._children = d.children;
+		    	// Set to null so its children won't be rendered in treemap
+		    	d.children = null;
+	        }
+	    });
+        
+        console.log("D3 Hierarchy constructed data, after modification:");
+		console.log(copiedRootNode);
 
-    // Show title toltip (full phenotype name and [id]) on mouse over. 
-    node.append("title")
-        .text(function(d) { return d.data.data.name + ' [' + d.data.data.id + ']'; });
+        // Construct the new root node based on the modified copiedRootNode
+		var newRootNode = constructHierarchy(copiedRootNode);
+
+	    // Lays out the specified root hierarchy
+	    // You must call root.sum before passing the hierarchy to the treemap layout. 
+	    // You probably also want to call root.sort to order the hierarchy before computing the layout.
+	    // Also assigns the following properties on root and its descendants: x0, y0, x1, y1
+	    treemap(newRootNode);
+        
+        // Make sure the svg is empty before adding anything
+        svg.selectAll("*").remove();
+
+        // Rendering
+	    var node = svg.selectAll(".node")
+	        .data(newRootNode.leaves())// Use the newRoot to render
+	        .enter().append("g")
+	        .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; });
+
+        // Categorical rectangle
+	    node.append("rect")
+	        .attr("class", "node")
+			.attr("id", function(d) { return d.data.data.id; })
+			.attr("width", function(d) { return d.x1 - d.x0; })
+			.attr("height", function(d) { return d.y1 - d.y0; })
+			.attr("fill", function(d) { return color(d.data.data.id); })
+			.on('click', function(d) {
+                console.log('dddd----------');
+                console.log(d);
+                // Only show drill down if has _children (after toggle)
+                if (typeof(d.data._children) !== 'undefined' && d.data._children.length > 0) {
+                    // Drill down one more level
+                    // Note: with the new root, its depth is back to 0 again
+                    // So we just need to use 1
+                    show(d.data.data, depth);
+                } 
+            });
+
+	    // Text of each rectangle
+	    node.append("text")
+	        .attr("class", "node-name")
+	        .selectAll("tspan")
+	        .data(function(d) { return d.data.data.name.split(' '); }) // one word per line
+	        .enter().append("tspan")
+	        .attr("x", 5)
+	        .attr("y", function(d, i) { return 15 + i * 10; }) // Increment the y of each line
+	        .text(function(d) { 
+	            return d; 
+	        });
+
+	    // Show title toltip (full phenotype name and [id]) on mouse over. 
+	    node.append("title")
+	        .text(function(d) { return d.data.data.name + ' [' + d.data.data.id + ']'; });
+    };
+
+
+
+    // Show all the 1st level categories of the root as the starting page
+    // Root has a depth of 0, so we use 1 to show its direct subclasses
+    show(origData, 1);
 
 });
 
-function sumByCount(d) {
-    return (d.children.length > 0) ? 0 : 1;
-}
+
 
 </script>
 
