@@ -147,7 +147,15 @@ d3.json("treemap.json", function(error, origData) {
 	    node.append("text")
 	        .attr("class", "node-name")
 	        .selectAll("tspan")
-	        .data(function(d) { return d.data.data.name.split(' '); }) // one word per line
+	        .data(function(d) { 
+	        	// Add [HP_Id] at the beginning of the label
+	        	var idArr = ['[' + d.data.data.id + ']'];
+	        	// Split the whole name into individual words
+	        	var nameArr = d.data.data.name.split(' '); 
+                
+                // Join two arrays
+                return idArr.concat(nameArr);
+	        }) // Id + one word per line
 	        .enter().append("tspan")
 	        .attr("x", 5)
 	        .attr("y", function(d, i) { return 15 + i * 10; }) // Increment the y of each line
