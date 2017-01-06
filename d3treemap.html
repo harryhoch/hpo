@@ -131,15 +131,16 @@ d3.json("treemap.json", function(error, origData) {
 			.attr("height", function(d) { return d.y1 - d.y0; })
 			.attr("fill", function(d) { return color(d.data.data.id); })
 			.on('click', function(d) {
-                console.log('dddd----------');
-                console.log(d);
                 // Only show drill down if has _children (after toggle)
                 if (typeof(d.data._children) !== 'undefined' && d.data._children.length > 0) {
                     // Drill down one more level
+                    // d.data.data contains all the origional data so we just use it directly
                     // Note: with the new root, its depth is back to 0 again
                     // So we just need to use 1
                     show(d.data.data, depth);
-                } 
+                } else {
+                	alert("This node has no child, it's a leaf node");
+                }
             });
 
 	    // Text of each rectangle
