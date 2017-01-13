@@ -92,10 +92,6 @@ d3.json("treemap.json", function(error, origData) {
         // so the input data will not be changed after applying d3.hierarchy
 	    var copiedRootData = $.extend(true, {}, rootData);
 
-accumulate(rootData);
-console.log("ssssssssssssss");
-console.log(rootData)
-
 	    // Constructs a root node from the specified hierarchical data
 	    // The returned node and each descendant has the following properties: data, depth, height, parent, children, value
 	    // We need to use the added properties d.depth to midify the structure
