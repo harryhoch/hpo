@@ -54,11 +54,14 @@ d3.json("treemap.json", function(error, origData) {
 	console.log("Complete raw treemap data:");
 	console.log(origData);
 
-    // This can be used to sum the IC score once we have it
-    // Just use the count for now
     // https://github.com/d3/d3-hierarchy#node_sum
-    var sumByCount = function(d) {
+	var sumByCount = function(d) {
 	    return d.children ? 0 : 1;
+	};
+
+    // This can be used to sum the IC score, why doesn't work?
+    var sumByIc = function(d) {
+	    return d.ic;
 	};
 
     // This is used for calculating the matches
@@ -71,8 +74,11 @@ d3.json("treemap.json", function(error, origData) {
     // The specified data must be an object representing the root node. 
     var constructHierarchy = function(data, sum) {
         var rootNode = d3.hierarchy(data)
-	        .sum(sum) // Must use sum before passing the hierarchy data to the treemap()
+	        // https://github.com/d3/d3-hierarchy/blob/master/README.md#node_sum
+	        // Must use sum before passing the hierarchy data to the treemap()
+	        .sum(sum) 
 	        .sort(function(a, b) { 
+	        	// https://github.com/d3/d3-hierarchy/blob/master/README.md#node_sort
 	            // sort nodes by descending height (greatest distance from any descendant leaf) and then descending value
 	            return b.height - a.height || b.value - a.value; 
 	        });
@@ -86,6 +92,10 @@ d3.json("treemap.json", function(error, origData) {
         // so the input data will not be changed after applying d3.hierarchy
 	    var copiedRootData = $.extend(true, {}, rootData);
 
+accumulate(rootData);
+console.log("ssssssssssssss");
+console.log(rootData)
+
 	    // Constructs a root node from the specified hierarchical data
 	    // The returned node and each descendant has the following properties: data, depth, height, parent, children, value
 	    // We need to use the added properties d.depth to midify the structure
@@ -94,7 +104,6 @@ d3.json("treemap.json", function(error, origData) {
 	    // so we can identify the nodes that cotain HP ids of the patient
 	    var rootNode = constructHierarchy(copiedRootData, sumByMatch);
 
-		
 		console.log("D3 Hierarchy constructed data, before modification:");
 		console.log(rootNode);
 
@@ -139,7 +148,6 @@ d3.json("treemap.json", function(error, origData) {
 
 	    // Lays out the specified root hierarchy
 	    // You must call root.sum before passing the hierarchy to the treemap layout. 
-	    // You probably also want to call root.sort to order the hierarchy before computing the layout.
 	    // Also assigns the following properties on root and its descendants: x0, y0, x1, y1
 	    treemap(copiedNewRootNode);
 

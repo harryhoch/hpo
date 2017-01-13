@@ -19,6 +19,9 @@ function dfs(id, tree) {
                 treemap[id] = {};
                 treemap[id].id = tree[n].id;
                 treemap[id].name = tree[n].name;
+                // Generate random IC score, Math.random() * (max - min) + min
+                // .toFixed() returns a string, so need to use oarseFloat
+                treemap[id].ic = parseFloat((Math.random() * (20 - 1) + 1).toFixed(2));
                 treemap[id].children = [];
 
                 // Build children if there's any, otherwise leave it empty array
