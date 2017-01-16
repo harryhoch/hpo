@@ -21,18 +21,27 @@ function dfs(id, tree) {
                 treemap[id].name = tree[n].name;
                 // Generate random IC score, Math.random() * (max - min) + min
                 // .toFixed() returns a string, so need to use oarseFloat
-                treemap[id].ic = parseFloat((Math.random() * (20 - 1) + 1).toFixed(2));
                 treemap[id].children = [];
 
                 // Build children if there's any, otherwise leave it empty array
+		// get min ic.
+		minic = Number.MAX_SAFE_INTEGER;
+		
                 if (tree[n].subClasses.length > 0) {
                     for (var m = 0; m < tree[n].subClasses.length; m++) {
                         if (typeof(visited[tree[n].subClasses[m]]) === 'undefined') {
                             var children = dfs(tree[n].subClasses[m], tree);
+			    if (children.ic <minic) {
+				minic = children.ic;
+			    }
                             treemap[id].children.push(children);
                         } 
                     }
-                } 
+                } else { // no subclasses, must set a minimum..
+		    minic =20;
+		}
+		
+		treemap[id].ic = parseFloat((Math.random() * (minic - 1) + 1).toFixed(2));
 
                 // Return the final structure
                 return treemap[id];
