@@ -9,7 +9,6 @@ font: 10px sans-serif;
 </style>
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
 
 </head>
 
@@ -50,10 +49,6 @@ var treemap = d3.treemap()
 d3.json("treemap.json", function(error, origData) {
     if (error) throw error;
 
-    // This is the complete treemap.json raw data
-	console.log("Complete raw treemap data:");
-	console.log(origData);
-
     // https://github.com/d3/d3-hierarchy#node_sum
 	var sumByCount = function(d) {
 	    return d.children ? 0 : 1;
@@ -61,7 +56,7 @@ d3.json("treemap.json", function(error, origData) {
 
     // This can be used to sum the IC score, why doesn't work?
     var sumByIc = function(d) {
-	    return d.ic;
+	    return d.value = d.ic;
 	};
 
     // This is used for calculating the matches
@@ -86,34 +81,23 @@ d3.json("treemap.json", function(error, origData) {
 	    return rootNode;
     };
 
-    // Render the treemap based on a given root data object
-    var show = function(rootData, depth) {
-        // Made a deep copy via jquery
-        // so the input data will not be changed after applying d3.hierarchy
-	    var copiedRootData = $.extend(true, {}, rootData);
-
-	    // Constructs a root node from the specified hierarchical data
+    var calculateMatch = function(rootData, depth) {
+        // Constructs a root node from the specified hierarchical data
 	    // The returned node and each descendant has the following properties: data, depth, height, parent, children, value
 	    // We need to use the added properties d.depth to midify the structure
-	    console.log("Constructing hierarchical data with d3 ...");
 	    // Using sumByMatch aggregate the values (number of matches) for internal nodes
 	    // so we can identify the nodes that cotain HP ids of the patient
-	    var rootNode = constructHierarchy(copiedRootData, sumByMatch);
+	    var rootNode = constructHierarchy(rootData, sumByMatch);
 
-		console.log("D3 Hierarchy constructed data, before modification:");
+		console.log("D3 Hierarchy constructed data:");
 		console.log(rootNode);
-
-        // Deep copy of the subtree starting at this node via d3 built-in method
-        // https://github.com/d3/d3-hierarchy#node_copy
-        // So changes made to copiedRootNode won't affect rootNode
-        var copiedRootNode = rootNode.copy();
 
         // Modify the children so they won't show up in the current rendering of treemap
 	    // https://github.com/d3/d3-hierarchy/#node_each
-	    copiedRootNode.each(function(d) { 
+	    rootNode.each(function(d) { 
 	        // Store the sumByMatch value for later highlighting
 	        // No need to set d.value = null since we'll be using a different sum method shortly
-	        d._value = d.value;
+	        d.data.match = d.value;
 	        
 	        // Hide all the children of depth 1 node, so we don't see them in treemap
 	        if (d.depth === depth) {
@@ -124,38 +108,24 @@ d3.json("treemap.json", function(error, origData) {
 		    	d.children = null;
 	        }
 	    });
-        
-        console.log("D3 Hierarchy constructed data, after modification:");
-		console.log(copiedRootNode);
 
-        // Construct the new root node based on the modified copiedRootNode
-        // Can't use subByMatch again here, since once apply treemap() 
-        // we'll only see the nodes with matches.
-        // But we still want to show all nodes and just highlight the matched ones
-        // Once we have the IC scores, we may want to use sumByIc so the size of each rectangle 
-        // will be determined by the summed IC score? Maybe?
-		var newRootNode = constructHierarchy(copiedRootNode, sumByCount);
+	    return rootNode;
+    };
 
-		console.log("newRootNode hierarchy........");
-		console.log(newRootNode);
+    // Render the treemap based on a given root data object
+    var show = function(rootData, depth) {
+		var rootDataWithMatch = calculateMatch(rootData, 1);
 
-		// Deep copy, otherwise won't be able to see the changes in debugger
-		var copiedNewRootNode = newRootNode.copy()
-
+        var rootNode  = constructHierarchy(rootDataWithMatch, sumByCount);
 	    // Lays out the specified root hierarchy
 	    // You must call root.sum before passing the hierarchy to the treemap layout. 
 	    // Also assigns the following properties on root and its descendants: x0, y0, x1, y1
-	    treemap(copiedNewRootNode);
-
-        // Now treemap assigns the following properties on copiedNewRootNode and its descendants: x0, y0, x1, y1 
-        // newRootNode stays unchanged, so we can compare the differences
-		console.log("copiedNewRootNode with layout........");
-		console.log(copiedNewRootNode);
+	    treemap(rootNode);
 
         // Add the root data to nav array
         // Only add this new data if it doesn't exist
-        if (navArr.indexOf(copiedNewRootNode.data.data) === -1) {
-            navArr.push(copiedNewRootNode.data.data);
+        if (navArr.indexOf(rootNode.data) === -1) {
+            navArr.push(rootNode.data);
         }
 
         // Make sure the svg is empty before adding anything
@@ -183,9 +153,12 @@ d3.json("treemap.json", function(error, origData) {
             	show(d, depth);
             });
 
+console.log('All leaves ...');
+console.log(rootNode.leaves());
+
         // Node
 	    var node = svg.selectAll(".node")
-	        .data(copiedNewRootNode.leaves())// Use the newRoot to render
+	        .data(rootNode.leaves())// Use the newRoot to render
 	        .enter().append("g")
 	        .attr("transform", function(d) { 
 	        	// Add 40px to y so we can see the nav bar
@@ -195,14 +168,14 @@ d3.json("treemap.json", function(error, origData) {
         // Node rectangle
 	    node.append("rect")
 	        .attr("class", "node")
-			.attr("id", function(d) { return d.data.data.id; })
+			.attr("id", function(d) { return d.data.id; })
 			.attr("width", function(d) { return d.x1 - d.x0; })
 			.attr("height", function(d) { return d.y1 - d.y0; })
 			.attr("fill", function(d) { 
 				// Highlight the node with matches with a different background color
 				// d.data._value stores the sum from sumByMatch, which means
 				// this node contains matched HP terms of the patient
-				return (d.data._value > 0) ? "rgb(169, 133, 202)" : "#ddd"; 
+				return (d.data.data.match > 0) ? "rgb(169, 133, 202)" : "#ddd"; 
 			})
 			.on('click', function(d) {
                 // Only show drill down if has _children (after toggle)
@@ -211,7 +184,7 @@ d3.json("treemap.json", function(error, origData) {
                     // d.data.data contains all the origional data so we just use it directly
                     // Note: with the new root, its depth is back to 0 again
                     // So we just need to use 1
-                    show(d.data.data, depth);
+                    show(d.data, depth);
                 } else {
                 	alert("This node has no child, it's a leaf node");
                 }
