@@ -26,6 +26,11 @@ var height = svg.attr("height");
 
 var adjustHeight = 40;
 
+var highlightBgColor = "#cdbfe3";
+var highlightBorderColor = "#d43f3a";
+var regularBgColor = "#f7f7f9";
+var regularBorderColor = "#999";
+
 var navArr = [];
 
 // A list of HP Ids from a patient with undiagnoised disease
@@ -200,7 +205,7 @@ d3.json("treemap.json", function(error, origData) {
 	        .data(leaves)
 	        .enter().append("g")
 	        .attr("transform", function(d) { 
-	        	// Add 40px to y so we can see the nav bar on top of treemap
+	        	// Move the whole treemap down so we can see the nav bar on top of treemap
 	        	return "translate(" + d.x0 + "," + (d.y0 + adjustHeight) + ")"; 
 	        });
 
@@ -212,11 +217,11 @@ d3.json("treemap.json", function(error, origData) {
 			.attr("height", function(d) { return d.y1 - d.y0; })
 			.attr("fill", function(d) { 
 				// Highlight the matching node with a different background color
-				return (d.data.isMatch) ? "#ca6ff8" : "#ddd"; 
+				return (d.data.isMatch) ? highlightBgColor : regularBgColor; 
 			})
 			.style("stroke", function(d) {
 				// Highlight the node that contains matching children with a different border color
-				return (d.data.matchCount > 0 && !d.data.isMatch) ? "#ca6ff8" : ""; 
+				return (d.data.matchCount > 0 && !d.data.isMatch) ? highlightBorderColor : regularBorderColor; 
 			})
 			.style("stroke-width", 1) // Thickness of border
 			.on('click', function( d) {
