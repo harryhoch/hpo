@@ -196,6 +196,10 @@ d3.json("treemap.json", function(error, origData) {
             	// Then rerender the treemap
             	renderTreemap(d);
             });
+        
+        // Show HP name on mouse over
+        nav.append("title")
+	        .text(function(d) { return d.name + ' [' + d.id + ']'; });
 
         // Display all leaves of current rootNode (with depth >=2 hidden)
         var leaves = rootNode.leaves();
