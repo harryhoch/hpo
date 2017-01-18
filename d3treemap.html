@@ -19,7 +19,9 @@ font: 10px sans-serif;
 <script>
 
 var svg = d3.select("#treemapSvg");
+
 var width = svg.attr("width");
+
 var height = svg.attr("height");
 
 var navArr = [];
@@ -39,96 +41,125 @@ var patientPhenotypes = [
 
 // Creates a new treemap layout
 var treemap = d3.treemap()
-    .tile(d3.treemapResquarify) // This is the default with the golden ratio
+    // Sets the tiling method to the specified function and returns this treemap layout
+    // If tile is not specified, defaults to d3.treemapSquarify with the golden ratio
+    .tile(d3.treemapResquarify) 
+    // Sets this treemap layout’s size to the specified two-element array of numbers [width, height] 
     .size([width, height])
-    .round(true) // Set rounding state to true to enable it. What does this mean?
-    .paddingInner(2); // We can also set outer padding
+    // Sets whether or not the treemap layout will round to exact pixel boundaries. 
+    // This can be nice to avoid antialiasing artifacts in SVG
+    .round(true)
+    // Sets the inner padding to the specified number
+    .paddingInner(2);
 
 // The principle behind d3.json() is to do everything in this function, 
 // which will be executed when the json is loaded
 d3.json("treemap.json", function(error, origData) {
     if (error) throw error;
 
-    // https://github.com/d3/d3-hierarchy#node_sum
-	var sumByCount = function(d) {
-	    return d.children ? 0 : 1;
-	};
-
-    // This can be used to sum the IC score, why doesn't work?
-    var sumByIc = function(d) {
-	    return d.value = d.ic;
-	};
-
-    // This is used for calculating the matches
-    // the number of matches will be stored in d.value
-    var sumByMatch = function(d) {
-        return (patientPhenotypes.indexOf(d.id) !== -1) ? 1 : 0;
-    };
-
     // Constructs a root node from the specified hierarchical data. 
     // The specified data must be an object representing the root node. 
-    var constructHierarchy = function(data, sum) {
+    var constructRootNode = function(data, sum) {
         var rootNode = d3.hierarchy(data)
 	        // https://github.com/d3/d3-hierarchy/blob/master/README.md#node_sum
 	        // Must use sum before passing the hierarchy data to the treemap()
 	        .sum(sum) 
-	        .sort(function(a, b) { 
-	        	// https://github.com/d3/d3-hierarchy/blob/master/README.md#node_sort
+            // https://github.com/d3/d3-hierarchy/blob/master/README.md#node_sort
+	        .sort(function(a, b) { 	
 	            // sort nodes by descending height (greatest distance from any descendant leaf) and then descending value
 	            return b.height - a.height || b.value - a.value; 
 	        });
-
+        
+        // The returned node and each descendant has the following added properties: 
+        // data, depth, height, parent, children, value
 	    return rootNode;
     };
 
-    var calculateMatch = function(rootData, depth) {
+    // Modify the provided root data by adding maching info
+    var calculateMatch = function(rootData) {
+        // This is used for calculating the matches
+        // the number of matches will be stored in d.value
+        var sumByMatch = function(d) {
+            return (patientPhenotypes.indexOf(d.id) !== -1) ? 1 : 0;
+        };
+
         // Constructs a root node from the specified hierarchical data
-	    // The returned node and each descendant has the following properties: data, depth, height, parent, children, value
-	    // We need to use the added properties d.depth to midify the structure
-	    // Using sumByMatch aggregate the values (number of matches) for internal nodes
-	    // so we can identify the nodes that cotain HP ids of the patient
-	    var rootNode = constructHierarchy(rootData, sumByMatch);
+	    // Using sumByMatch aggregate the values (number of matches)
+	    // so we can identify the nodes that contain matches(HP ids of the patient)
+	    var rootNode = constructRootNode(rootData, sumByMatch);
 
-		console.log("D3 Hierarchy constructed data:");
-		console.log(rootNode);
-
-        // Modify the children so they won't show up in the current rendering of treemap
+        // Inject the calculated match into data for later highlighting
 	    // https://github.com/d3/d3-hierarchy/#node_each
 	    rootNode.each(function(d) { 
-	        // Store the sumByMatch value for later highlighting
 	        // No need to set d.value = null since we'll be using a different sum method shortly
 	        d.data.match = d.value;
-	        
-	        // Hide all the children of depth 1 node, so we don't see them in treemap
-	        if (d.depth === depth) {
-				// Copy the data first
-            	d._children = d.children;
-		    	// Set to null so its children won't be rendered in treemap
-		    	// Has to be null instead of empty array []
-		    	d.children = null;
-	        }
 	    });
 
-	    return rootNode;
+        console.log("Root data with matching count...");
+        console.log(rootNode.data);
+
+        // Return the modified rootNode.data instead of the D3 hierarchy rootNode
+        // We'll use this rootNode.data as the new data to construct hierarchy 
+        // with a different sum method later
+	    return rootNode.data;
     };
 
     // Render the treemap based on a given root data object
-    var show = function(rootData, depth) {
-		var rootDataWithMatch = calculateMatch(rootData, 1);
+    // Only render the direct cubclasses so we can drill down depth by depth
+    var renderTreemap = function(rootData) {
+		// Add calculated matches to the rootData
+        var rootDataWithMatch = calculateMatch(rootData);
+        
+        // Computes the number of leaves under this node and assigns it to node.value, 
+        // and similarly for every descendant of node. 
+        // If this node is a leaf, its count is 1
+        var sumByCount = function(d) {
+            // Use d._children instead of d.children
+            // because sum is done after the modification by rootNode.each? Probably
+            return d._children ? 0 : 1;
+        };
 
-        var rootNode  = constructHierarchy(rootDataWithMatch, sumByCount);
-	    // Lays out the specified root hierarchy
-	    // You must call root.sum before passing the hierarchy to the treemap layout. 
-	    // Also assigns the following properties on root and its descendants: x0, y0, x1, y1
+        // Each HP id has its own IC score specified in treemap.json
+        // Here we only accumulate the total of IC score from leaves
+        // Very similar to sumByCount, but just a different numeric value
+        var sumByIc = function(d) {
+            // Use d._children instead of d.children
+            // because sum is done after the modification by rootNode.each? Probably
+            return d._children ? 0 : d.ic;
+        };
+
+        // This time just focus on sizing the already modified data
+        // sumByCount or sumByIc
+        var rootNode = constructRootNode(rootDataWithMatch, sumByIc);
+        
+        console.log("D3 hierarchy constructed rootNode...");
+        console.log(rootNode);
+
+        // Modify the children so they won't show up in the current rendering of treemap
+        // https://github.com/d3/d3-hierarchy/#node_each
+        rootNode.each(function(d) { 
+            // Hide all the children of depth 1, so we don't see them in treemap rendering
+            if (d.depth === 1) {
+                // Copy the data first
+                d._children = d.children;
+                // Set to null so its children won't be rendered in treemap
+                // Has to be null instead of empty array []
+                d.children = null;
+            }
+        });
+       
+	    // Lays out the specified root node hierarchy and 
+        // assigns the following properties on root node and its descendants: x0, y0, x1, y1
+	    // You must call root.sum before passing the hierarchy to the treemap layout, we've done that :)
 	    treemap(rootNode);
 
-        // Add the root data to nav array
+        // Add the root data to nav array to remember the drill down path
         // Only add this new data if it doesn't exist
         if (navArr.indexOf(rootNode.data) === -1) {
             navArr.push(rootNode.data);
         }
 
-        // Make sure the svg is empty before adding anything
+        // Make sure the svg is empty before rendering
         svg.selectAll("*").remove();
 
         // Create navigation bar
@@ -150,15 +181,17 @@ d3.json("treemap.json", function(error, origData) {
             	// Remove all sub level data from the navArr
                 navArr = navArr.slice(0, i);
             	// Then rerender the treemap
-            	show(d, depth);
+            	renderTreemap(d);
             });
 
-console.log('All leaves ...');
-console.log(rootNode.leaves());
+        // Display all leaves of current rootNode (with depth >=2 hidden)
+        var leaves = rootNode.leaves();
+        console.log('All leaves ...');
+        console.log(leaves);
 
-        // Node
+        // Node group
 	    var node = svg.selectAll(".node")
-	        .data(rootNode.leaves())// Use the newRoot to render
+	        .data(leaves)
 	        .enter().append("g")
 	        .attr("transform", function(d) { 
 	        	// Add 40px to y so we can see the nav bar
@@ -175,30 +208,30 @@ console.log(rootNode.leaves());
 				// Highlight the node with matches with a different background color
 				// d.data._value stores the sum from sumByMatch, which means
 				// this node contains matched HP terms of the patient
-				return (d.data.data.match > 0) ? "rgb(169, 133, 202)" : "#ddd"; 
+				return (d.data.match > 0) ? "rgb(169, 133, 202)" : "#ddd"; 
 			})
 			.on('click', function(d) {
                 // Only show drill down if has _children (after toggle)
-                if (typeof(d.data._children) !== 'undefined' && d.data._children.length > 0) {
+                if (typeof(d._children) !== 'undefined' && d._children.length > 0) {
                     // Drill down one more level
                     // d.data.data contains all the origional data so we just use it directly
                     // Note: with the new root, its depth is back to 0 again
                     // So we just need to use 1
-                    show(d.data, depth);
+                    renderTreemap(d.data);
                 } else {
                 	alert("This node has no child, it's a leaf node");
                 }
             });
 
-	    // Text of each rectangle
+	    // Node text inside node rectangle
 	    node.append("text")
 	        .attr("class", "node-name")
 	        .selectAll("tspan")
 	        .data(function(d) { 
 	        	// Add [HP_Id] at the beginning of the label
-	        	var idArr = ['[' + d.data.data.id + ']'];
+	        	var idArr = ['[' + d.data.id + ']'];
 	        	// Split the whole name into individual words
-	        	var nameArr = d.data.data.name.split(' '); 
+	        	var nameArr = d.data.name.split(' '); 
                 
                 // Join two arrays
                 return idArr.concat(nameArr);
@@ -210,17 +243,17 @@ console.log(rootNode.leaves());
 	            return d; 
 	        });
 
-	    // Show title toltip (full phenotype name and [id]) on mouse over. 
+	    // Show title tooltip (full phenotype name and [id]) on mouse over. 
 	    node.append("title")
-	        .text(function(d) { return d.data.data.name + ' [' + d.data.data.id + ']'; });
+	        .text(function(d) { return d.data.name + ' [' + d.data.id + ']'; });
     };
 
 
 
     // Show all the 1st level categories of the root as the starting page
-    // Root has a depth of 0, so we use 1 to show its direct subclasses
+    // Root has a depth of 0, so we always use depth 1 to show its direct subclasses
     // Nodes that contain matches will be highlighted in a different background color
-    show(origData, 1);
+    renderTreemap(origData);
 
 });
 
