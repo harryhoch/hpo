@@ -92,6 +92,7 @@ d3.json("treemap.json", function(error, origData) {
 	    // https://github.com/d3/d3-hierarchy/#node_each
 	    rootNode.each(function(d) { 
 	        // No need to set d.value = null since we'll be using a different sum method shortly
+	        // and the d.value will be changed by then
 	        d.data.match = d.value;
 	    });
 
@@ -129,7 +130,7 @@ d3.json("treemap.json", function(error, origData) {
         };
 
         // This time just focus on sizing the already modified data
-        // sumByCount or sumByIc
+        // Either sumByCount or sumByIc
         var rootNode = constructRootNode(rootDataWithMatch, sumByIc);
         
         console.log("D3 hierarchy constructed rootNode...");
@@ -138,11 +139,10 @@ d3.json("treemap.json", function(error, origData) {
         // Modify the children so they won't show up in the current rendering of treemap
         // https://github.com/d3/d3-hierarchy/#node_each
         rootNode.each(function(d) { 
-            // Hide all the children of depth 1, so we don't see them in treemap rendering
+            // Hide all the children of depth 1 nodes, so we don't see them in treemap rendering
             if (d.depth === 1) {
                 // Copy the data first
                 d._children = d.children;
-                // Set to null so its children won't be rendered in treemap
                 // Has to be null instead of empty array []
                 d.children = null;
             }
