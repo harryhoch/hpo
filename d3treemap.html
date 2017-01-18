@@ -50,7 +50,7 @@ var treemap = d3.treemap()
     // This can be nice to avoid antialiasing artifacts in SVG
     .round(true)
     // Sets the inner padding to the specified number
-    .paddingInner(2);
+    .padding(2);
 
 // The principle behind d3.json() is to do everything in this function, 
 // which will be executed when the json is loaded
@@ -93,7 +93,9 @@ d3.json("treemap.json", function(error, origData) {
 	    rootNode.each(function(d) { 
 	        // No need to set d.value = null since we'll be using a different sum method shortly
 	        // and the d.value will be changed by then
-	        d.data.match = d.value;
+	        d.data.matchCount = d.value;
+            // Also mark the actual matching node
+            d.data.isMatch = (patientPhenotypes.indexOf(d.data.id) !== -1) ? true : false
 	    });
 
         console.log("Root data with matching count...");
@@ -205,12 +207,15 @@ d3.json("treemap.json", function(error, origData) {
 			.attr("width", function(d) { return d.x1 - d.x0; })
 			.attr("height", function(d) { return d.y1 - d.y0; })
 			.attr("fill", function(d) { 
-				// Highlight the node with matches with a different background color
-				// d.data._value stores the sum from sumByMatch, which means
-				// this node contains matched HP terms of the patient
-				return (d.data.match > 0) ? "rgb(169, 133, 202)" : "#ddd"; 
+				// Highlight the matching node with a different background color
+				return (d.data.isMatch) ? "#ca6ff8" : "#ddd"; 
 			})
-			.on('click', function(d) {
+			.style("stroke", function(d) {
+				// Highlight the node that contains matching children with a different border color
+				return (d.data.matchCount > 0 && !d.data.isMatch) ? "#ca6ff8" : ""; 
+			})
+			.style("stroke-width", 1) // Thickness of border
+			.on('click', function( d) {
                 // Only show drill down if has _children (after toggle)
                 if (typeof(d._children) !== 'undefined' && d._children.length > 0) {
                     // Drill down one more level
