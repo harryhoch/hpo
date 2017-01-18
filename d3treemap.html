@@ -50,7 +50,9 @@ var patientPhenotypes = [
 var treemap = d3.treemap()
     // Sets the tiling method to the specified function and returns this treemap layout
     // If tile is not specified, defaults to d3.treemapSquarify with the golden ratio
-    .tile(d3.treemapResquarify) 
+    // d3.treemapBinary partitions the nodes into an approximately-balanced binary tree
+    // https://github.com/d3/d3-hierarchy/blob/master/README.md#treemap-tiling
+    .tile(d3.treemapBinary) 
     // Sets this treemap layout’s size to the specified two-element array of numbers [width, height] 
     // Since all treemap y shifts down to show the nav bar, we reduce the canvas height according
     // Otherwise the bottom of treemap will be cut off
