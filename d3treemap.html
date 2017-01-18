@@ -14,7 +14,7 @@ font: 10px sans-serif;
 
 <body>
 
-<svg id= "treemapSvg" width="960" height="570"></svg>
+<svg id= "treemapSvg" width="960" height="600"></svg>
 
 <script>
 
@@ -23,6 +23,8 @@ var svg = d3.select("#treemapSvg");
 var width = svg.attr("width");
 
 var height = svg.attr("height");
+
+var adjustHeight = 40;
 
 var navArr = [];
 
@@ -45,12 +47,14 @@ var treemap = d3.treemap()
     // If tile is not specified, defaults to d3.treemapSquarify with the golden ratio
     .tile(d3.treemapResquarify) 
     // Sets this treemap layout’s size to the specified two-element array of numbers [width, height] 
-    .size([width, height])
+    // Since all treemap y shifts down to show the nav bar, we reduce the canvas height according
+    // Otherwise the bottom of treemap will be cut off
+    .size([width, height - adjustHeight])
     // Sets whether or not the treemap layout will round to exact pixel boundaries. 
     // This can be nice to avoid antialiasing artifacts in SVG
     .round(true)
-    // Sets the inner padding to the specified number
-    .padding(2);
+    // Sets the inner and outer padding
+    .padding(3);
 
 // The principle behind d3.json() is to do everything in this function, 
 // which will be executed when the json is loaded
@@ -196,8 +200,8 @@ d3.json("treemap.json", function(error, origData) {
 	        .data(leaves)
 	        .enter().append("g")
 	        .attr("transform", function(d) { 
-	        	// Add 40px to y so we can see the nav bar
-	        	return "translate(" + d.x0 + "," + (d.y0 + 40) + ")"; 
+	        	// Add 40px to y so we can see the nav bar on top of treemap
+	        	return "translate(" + d.x0 + "," + (d.y0 + adjustHeight) + ")"; 
 	        });
 
         // Node rectangle
