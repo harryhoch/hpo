@@ -1,15 +1,15 @@
-# hpo
+# Phenotype Treemap
 
-The `hp.owl` is downloaded from Ontobee. Then we use the jar from `/owl2vowl` to convert this owl file into a `hp.json` file:
+The `hp.owl` and `mp.owl` are downloaded from Ontobee. Then we use the jar from `/owl2vowl` to convert the corresponding owl file into a JSON file. For example:
 
 ````
 java -jar owl2vowl/owl2vowl.jar -file hp.owl
 ````
 
-Then we parse the `hp.json` and create a graph json file `graph.json`.
+Then we parse the `hp.json` and create a graph json file `hp_graph.json`.
 
 ````
-node graph.js
+node hp_graph.js
 ````
 
 And the graph json follows this structure:
@@ -44,9 +44,9 @@ And the graph json follows this structure:
 Then we need to create a treemap hierarchy based on the `tree` structure:
 
 ````
-node treemap.js
+node hp_treemap.js
 ````
 
 And this will get us a structure similar to the `flare.json`.
 
-`d3treemap.html` renders the `treemap.json` into a treemap view.
+`hp_treemap.html` renders the `hp_treemap.json` into a treemap view.
