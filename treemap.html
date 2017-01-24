@@ -290,7 +290,11 @@ var render = function(svgId, json, sourceArr) {
 	            });
 
 		    // Node text inside node rectangle
-		    node.append("text")
+		    node.filter((function(d) {
+		        	// Use d3 filter() to create text only for matched or containing matches nodes
+		        	return (d.data.isMatch || d.data.matchCount > 0);
+		        }))
+		        .append("text")
 		        .attr("class", "node-name")
 		        .selectAll("tspan")
 		        .data(function(d) { 
