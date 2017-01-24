@@ -8,6 +8,8 @@ font: 10px sans-serif;
 
 </style>
 
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
 <script src="https://d3js.org/d3.v4.min.js"></script>
 
 <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
@@ -27,6 +29,7 @@ var highlightBgColor = "#cdbfe3";
 var highlightBorderColor = "#d43f3a";
 var regularBgColor = "#f7f7f9";
 var regularBorderColor = "#999";
+var leafBorderColor = "#1b926c";
 
 // A list of HP Ids from a patient with undiagnoised disease
 var patientPhenotypes = [
@@ -245,7 +248,9 @@ var render = function(svgId, json, sourceArr) {
 	        
 	        // Show HP name on mouse over
 	        nav.append("title")
-		        .text(function(d) { return d.name + ' [' + d.id + ']'; });
+		        .text(function(d) { 
+		        	return d.name + ' [' + d.id + ']'; 
+		        });
 
 	        // Display all leaves of current rootNode (with depth >=2 hidden)
 	        var leaves = rootNode.leaves();
@@ -272,8 +277,13 @@ var render = function(svgId, json, sourceArr) {
 					return (d.data.isMatch) ? highlightBgColor : regularBgColor; 
 				})
 				.style("stroke", function(d) {
-					// Highlight the node that contains matching children with a different border color
-					return (d.data.matchCount > 0 && !d.data.isMatch) ? highlightBorderColor : regularBorderColor; 
+					if (d.children === null && typeof(d._children) === 'undefined') {
+                        // Use a different border color on leaf node
+                        return leafBorderColor;
+					} else {
+						// Highlight the node that contains matching children with a different border color
+					    return (d.data.matchCount > 0 && !d.data.isMatch) ? highlightBorderColor : regularBorderColor;
+					}
 				})
 				.style("stroke-width", 1) // Thickness of border
 				.on('click', function( d) {
@@ -290,8 +300,8 @@ var render = function(svgId, json, sourceArr) {
 	            });
 
 		    // Node text inside node rectangle
+		    // Use d3 filter() to create text only for matched or containing matches nodes
 		    node.filter((function(d) {
-		        	// Use d3 filter() to create text only for matched or containing matches nodes
 		        	return (d.data.isMatch || d.data.matchCount > 0);
 		        }))
 		        .append("text")
@@ -308,14 +318,33 @@ var render = function(svgId, json, sourceArr) {
 		        }) // Id + one word per line
 		        .enter().append("tspan")
 		        .attr("x", 5)
-		        .attr("y", function(d, i) { return 15 + i * 10; }) // Increment the y of each line
+		        .attr("y", function(d, i) { 
+		            // Increment the y of each line
+		            return 15 + i * 10; 
+		        }) 
 		        .text(function(d) { 
 		            return d; 
 		        });
 
+            // Add fontawesome leaf icon on leaf node
+            node.append("text")
+                .attr("class", "leaf")
+                .attr('font-family', 'FontAwesome')
+                .attr('text-anchor', 'start')
+                .attr('dominant-baseline', 'central')
+		        .text(function(d) { 
+		        	if (d.children === null && typeof(d._children) === 'undefined') {
+                        // Be aware that we need to adapt the "fa-leaf [&#xf06c;]" from HTML/CSS unicode format 
+			        	// to Javascript unicode format so that &#xf06c; must be written \uf06c in javascript
+			        	return '\uf06c'; 
+		        	}
+		        });
+
 		    // Show title tooltip (full phenotype name and [id]) on mouse over. 
 		    node.append("title")
-		        .text(function(d) { return d.data.name + ' [' + d.data.id + ']'; });
+		        .text(function(d) { 
+		        	return d.data.name + ' [' + d.data.id + ']'; 
+		        });
 	    };
 
 
