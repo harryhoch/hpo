@@ -6,6 +6,15 @@ svg {
 font: 10px sans-serif;
 }
 
+.patientTreemap{
+float:left;
+width:600px;
+}
+
+.matchingTreemap{
+float:left;
+width:400px;
+}
 </style>
 
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -17,9 +26,25 @@ font: 10px sans-serif;
 
 <body>
 
+<div class="patientTreemap">
+<h2>Patient with undiagnoised disease</h2>
 <svg id= "hpSvg" width="600" height="960"></svg>
+</div>
 
-<svg id= "mpSvg" width="600" height="960"></svg>
+<div class="matchingTreemap">
+<h2 id="mpSvg1ModelName"></h2>
+<svg id= "mpSvg1" width="400" height="640"></svg>
+</div>
+
+<div class="matchingTreemap">
+<h2 id="mpSvg2ModelName"></h2>
+<svg id= "mpSvg2" width="400" height="640"></svg>
+</div>
+
+<div class="matchingTreemap">
+<h2 id="mpSvg3ModelName"></h2>
+<svg id= "mpSvg3" width="400" height="640"></svg>
+</div>
 
 <script>
 
@@ -66,17 +91,36 @@ var simSearch = function(sourceArr, targetGroupId) {
         console.log("simsearch results...");
         console.log(data);  
         
-        var top3Genes = [];
+        var top3Models = [];
+        // Find the top 3 ranked models from simsearch result
+        // and render each model as a treemap with highlighted matches
         for (var i = 0; i < 3; i++) {
-            // Find the MP matches from simsearch result
-            // Convert MP:1234567 to MP_1234567
-            top3Genes.push(data.b[i].matches[0].b.id.replace(':', '_'));
+            // Find the top 3 ranked models from simsearch result
+            top3Models.push(data.b[i]);
         }
 
-		console.log("top 3 genes");
-		console.log(top3Genes);
+		console.log("Top 3 models");
+		console.log(top3Models);
 
-		render('#mpSvg', 'mp/mp_treemap.json', top3Genes);
+        for (var j = 0; j < 3; j++) {
+            var matches = [];
+            for (var k = 0; k < top3Models[j].matches.length; k++) {
+				// Convert MP:1234567 to MP_1234567
+            	var id = top3Models[j].matches[k].b.id.replace(':', '_');
+            	matches.push(id)
+            }
+            
+            var modelNumber = j + 1;
+
+            console.log("Matches arry of model " + modelNumber);
+            console.log(matches);
+
+            // Add model name
+            $('#mpSvg' + modelNumber + 'ModelName').text(top3Models[j].label);
+
+            // Render treemap with matches for each model
+            render('#mpSvg' + modelNumber, 'mp/mp_treemap.json', matches);
+        }
     });
     
     jqxhr.fail(function () { 
