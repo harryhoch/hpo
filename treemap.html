@@ -6,14 +6,10 @@ svg {
 font: 10px sans-serif;
 }
 
-.patientTreemap{
-float:left;
-width:600px;
-}
-
+.patientTreemap, 
 .matchingTreemap{
 float:left;
-width:400px;
+width:300px;
 }
 </style>
 
@@ -27,23 +23,23 @@ width:400px;
 <body>
 
 <div class="patientTreemap">
-<h2>Patient with undiagnoised disease</h2>
-<svg id= "hpSvg" width="600" height="960"></svg>
+<h3>Patient with undiagnoised disease</h3>
+<svg id= "hpSvg" width="300" height="500"></svg>
 </div>
 
 <div class="matchingTreemap">
-<h2 id="mpSvg1ModelName"></h2>
-<svg id= "mpSvg1" width="400" height="640"></svg>
+<h3 id="mpSvg1ModelName"></h3>
+<svg id= "mpSvg1" width="300" height="500"></svg>
 </div>
 
 <div class="matchingTreemap">
-<h2 id="mpSvg2ModelName"></h2>
-<svg id= "mpSvg2" width="400" height="640"></svg>
+<h3 id="mpSvg2ModelName"></h3>
+<svg id= "mpSvg2" width="300" height="500"></svg>
 </div>
 
 <div class="matchingTreemap">
-<h2 id="mpSvg3ModelName"></h2>
-<svg id= "mpSvg3" width="400" height="640"></svg>
+<h3 id="mpSvg3ModelName"></h3>
+<svg id= "mpSvg3" width="300" height="500"></svg>
 </div>
 
 <script>
@@ -112,7 +108,7 @@ var simSearch = function(sourceArr, targetGroupId) {
             
             var modelNumber = j + 1;
 
-            console.log("Matches arry of model " + modelNumber);
+            console.log("Matches array of model " + modelNumber);
             console.log(matches);
 
             // Add model name
