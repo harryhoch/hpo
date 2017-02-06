@@ -13,8 +13,6 @@ width:300px;
 }
 </style>
 
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-
 <script src="https://d3js.org/d3.v4.min.js"></script>
 
 <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
@@ -24,22 +22,22 @@ width:300px;
 
 <div class="patientTreemap">
 <h3>Patient with undiagnoised disease</h3>
-<svg id= "hpSvg" width="300" height="500"></svg>
+<svg id= "hpSvg" width="300" height="450"></svg>
 </div>
 
 <div class="matchingTreemap">
 <h3 id="mpSvg1ModelName"></h3>
-<svg id= "mpSvg1" width="300" height="500"></svg>
+<svg id= "mpSvg1" width="300" height="450"></svg>
 </div>
 
 <div class="matchingTreemap">
 <h3 id="mpSvg2ModelName"></h3>
-<svg id= "mpSvg2" width="300" height="500"></svg>
+<svg id= "mpSvg2" width="300" height="450"></svg>
 </div>
 
 <div class="matchingTreemap">
 <h3 id="mpSvg3ModelName"></h3>
-<svg id= "mpSvg3" width="300" height="500"></svg>
+<svg id= "mpSvg3" width="300" height="450"></svg>
 </div>
 
 <script>
@@ -136,7 +134,7 @@ var render = function(svgId, json, sourceArr) {
     var navArr = [];
 
     // Creates a new treemap layout
-    var treemap = d3.treemap()
+    var outerTreemap = d3.treemap()
 	    // Sets the tiling method to the specified function and returns this treemap layout
 	    // If tile is not specified, defaults to d3.treemapSquarify with the golden ratio
 	    // d3.treemapBinary partitions the nodes into an approximately-balanced binary tree
@@ -145,12 +143,19 @@ var render = function(svgId, json, sourceArr) {
 	    // Sets this treemap layout’s size to the specified two-element array of numbers [width, height] 
 	    // Since all treemap y shifts down to show the nav bar, we reduce the canvas height according
 	    // Otherwise the bottom of treemap will be cut off
-	    .size([svgWidth, svgHeight - adjustHeight])
+	    //.size([svgWidth, svgHeight - adjustHeight])
 	    // Sets whether or not the treemap layout will round to exact pixel boundaries. 
 	    // This can be nice to avoid antialiasing artifacts in SVG
 	    .round(true)
-	    // Sets the inner and outer padding
-	    .padding(3);
+	    //Sets the inner and outer padding
+	    .padding(4);
+
+
+    // Inner treemap
+    var innerTreemap = d3.treemap()
+	    .tile(d3.treemapBinary) 
+	    .round(true)
+	    .paddingOuter(1);
 
     // The principle behind d3.json() is to do everything in this function, 
 	// which will be executed when the json is loaded
@@ -207,6 +212,47 @@ var render = function(svgId, json, sourceArr) {
 		    return rootNode.data;
 	    };
 
+        // Layouts the inner treemap
+        var innerLayout = function(width, height, rootData) {
+        	// Add calculated matches to the rootData
+	        var rootDataWithMatch = calculateMatch(rootData);
+
+	        // Each HP id has its own IC score specified in treemap.json
+	        // Here we only accumulate the total of IC score from leaves
+	        var sumByIc = function(d) {
+	            // Use d._children instead of d.children
+	            // because sum is done after the modification by rootNode.each? Probably
+	            return d._children ? 0 : d.ic;
+	        };
+
+	        // This time just focus on sizing the already modified data
+	        // Either sumByCount or sumByIc
+	        var rootNode = constructRootNode(rootDataWithMatch, sumByIc);
+
+	        // Modify the children so they won't show up in the current rendering of treemap
+	        // https://github.com/d3/d3-hierarchy/#node_each
+	        rootNode.each(function(d) { 
+	            // Hide all the children of depth 1 nodes, so we don't see them in treemap rendering
+	            if (d.depth === 1) {
+	                // Copy the data first
+	                d._children = d.children;
+	                // Has to be null instead of empty array []
+	                d.children = null;
+	            }
+	        });
+	       
+		    // Lays out the specified root node hierarchy and 
+	        // assigns the following properties on root node and its descendants: x0, y0, x1, y1
+		    // You must call root.sum before passing the hierarchy to the treemap layout, we've done that :)
+		    // Set inner size
+		    innerTreemap.size([width, height]);
+		    // Layout
+		    innerTreemap(rootNode);
+		    
+
+		    return rootNode;
+        };
+
 	    // Render the treemap based on a given root data object
 	    // Only render the direct cubclasses so we can drill down depth by depth
 	    var renderTreemap = function(rootData) {
@@ -253,7 +299,10 @@ var render = function(svgId, json, sourceArr) {
 		    // Lays out the specified root node hierarchy and 
 	        // assigns the following properties on root node and its descendants: x0, y0, x1, y1
 		    // You must call root.sum before passing the hierarchy to the treemap layout, we've done that :)
-		    treemap(rootNode);
+		    // Set overall size
+		    outerTreemap.size([svgWidth, svgHeight - adjustHeight]);
+		    // Layout
+		    outerTreemap(rootNode);
 
 	        // Add the root data to nav array to remember the drill down path
 	        // Only add this new data if it doesn't exist
@@ -305,8 +354,8 @@ var render = function(svgId, json, sourceArr) {
 		        	// Move the whole treemap down so we can see the nav bar on top of treemap
 		        	return "translate(" + d.x0 + "," + (d.y0 + adjustHeight) + ")"; 
 		        });
-
-	        // Node rectangle
+            
+            // Node rectangle
 		    node.append("rect")
 		        .attr("class", "node")
 				.attr("id", function(d) { return d.data.id; })
@@ -339,6 +388,26 @@ var render = function(svgId, json, sourceArr) {
 	                }
 	            });
 
+
+            // Create inner treemap for nodes that contain matches
+            node.filter((function(d) {
+		        	return (d.data.matchCount > 0 && !d.data.isMatch);
+		        }))
+                .selectAll(".child")
+				.data(function(d) { 
+					var insideRootNode = innerLayout(d.x1 - d.x0, d.y1 - d.y0, d.data);
+					return insideRootNode.children;
+				})
+				.enter().append("rect")
+				.attr("class", "child")
+				.attr("x", function(d) { return d.x0; })
+		        .attr("y", function(d) { return d.y0; })
+		        .attr("width", function(d) { return d.x1 - d.x0; })
+		        .attr("height", function(d) { return d.y1 - d.y0; })
+		        .attr("fill", "grey")
+				.style("stroke", "orange")
+				.style("stroke-width", 0.5);
+
 		    // Node text inside node rectangle
 		    // Use d3 filter() to create text only for matched or containing matches nodes
 		    node.filter((function(d) {
@@ -363,23 +432,11 @@ var render = function(svgId, json, sourceArr) {
 		            return 15 + i * 10; 
 		        }) 
 		        .text(function(d) { 
-		            return d; 
+		            // Hide the label for now
+		            //return d; 
 		        });
 
-            // Add fontawesome leaf icon on leaf node
-            node.append("text")
-                .attr("class", "leaf")
-                .attr('font-family', 'FontAwesome')
-                .attr('text-anchor', 'start')
-                .attr('dominant-baseline', 'central')
-		        .text(function(d) { 
-		        	if (d.children === null && typeof(d._children) === 'undefined') {
-                        // Be aware that we need to adapt the "fa-leaf [&#xf06c;]" from HTML/CSS unicode format 
-			        	// to Javascript unicode format so that &#xf06c; must be written \uf06c in javascript
-			        	return '\uf06c'; 
-		        	}
-		        });
-
+            
 		    // Show title tooltip (full phenotype name and [id]) on mouse over. 
 		    node.append("title")
 		        .text(function(d) { 
