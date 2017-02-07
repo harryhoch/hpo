@@ -10,7 +10,9 @@ font: 10px sans-serif;
 .matchingTreemap{
 float:left;
 width:300px;
+margin-right:20px;
 }
+
 </style>
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
@@ -46,9 +48,10 @@ width:300px;
 var adjustHeight = 40;
 var highlightBgColor = "#cdbfe3";
 var highlightBorderColor = "#d43f3a";
-var regularBgColor = "#f7f7f9";
-var regularBorderColor = "#999";
+var regularBgColor = "#ddd";
 var leafBorderColor = "#1b926c";
+var innerTreemapBgColor = "#b9b9b4";
+var innerTreemapBorderColor = "fc8e60";
 
 // A list of HP Ids from a patient with undiagnoised disease
 var patientPhenotypes = [
@@ -148,14 +151,14 @@ var render = function(svgId, json, sourceArr) {
 	    // This can be nice to avoid antialiasing artifacts in SVG
 	    .round(true)
 	    //Sets the inner and outer padding
-	    .padding(4);
+	    .padding(3);
 
 
     // Inner treemap
     var innerTreemap = d3.treemap()
 	    .tile(d3.treemapBinary) 
 	    .round(true)
-	    .paddingOuter(1);
+	    .paddingOuter(2);
 
     // The principle behind d3.json() is to do everything in this function, 
 	// which will be executed when the json is loaded
@@ -212,7 +215,7 @@ var render = function(svgId, json, sourceArr) {
 		    return rootNode.data;
 	    };
 
-        // Layouts the inner treemap
+        // Layouts the inner treemap with specified width, height, and data
         var innerLayout = function(width, height, rootData) {
         	// Add calculated matches to the rootData
 	        var rootDataWithMatch = calculateMatch(rootData);
@@ -316,7 +319,9 @@ var render = function(svgId, json, sourceArr) {
 	        // Create navigation bar
 	        // We may also use this to render a path from root to matched node
 	        // and this matched node can either be a leaf of internal node
-	        var nav = svg.selectAll(".nav")
+	        var nav = svg.append("g")
+	            .attr("class", "treemap-nav")
+	            .selectAll(".nav")
 	            .data(navArr)
 	            .enter().append("g")
 	            .attr("class", "nav")
@@ -346,14 +351,28 @@ var render = function(svgId, json, sourceArr) {
 	        console.log('All leaves ...');
 	        console.log(leaves);
 
-	        // Node group
-		    var node = svg.selectAll(".node")
+	        // Node group, can't apply style on g element
+		    var node = svg.append("g")
+		        .attr("class", "treemap")
+		        .selectAll(".node")
 		        .data(leaves)
 		        .enter().append("g")
 		        .attr("transform", function(d) { 
 		        	// Move the whole treemap down so we can see the nav bar on top of treemap
 		        	return "translate(" + d.x0 + "," + (d.y0 + adjustHeight) + ")"; 
-		        });
+		        })
+		        .on('click', function( d) {
+	                // Only show drill down if has _children (after toggle)
+	                if (typeof(d._children) !== 'undefined' && d._children.length > 0) {
+	                    // Drill down one more level
+	                    // d.data.data contains all the origional data so we just use it directly
+	                    // Note: with the new root, its depth is back to 0 again
+	                    // So we just need to use 1
+	                    renderTreemap(d.data);
+	                } else {
+	                	alert("This node has no child, it's a leaf node");
+	                }
+	            });
             
             // Node rectangle
 		    node.append("rect")
@@ -371,22 +390,11 @@ var render = function(svgId, json, sourceArr) {
                         return leafBorderColor;
 					} else {
 						// Highlight the node that contains matching children with a different border color
-					    return (d.data.matchCount > 0 && !d.data.isMatch) ? highlightBorderColor : regularBorderColor;
+						// No border color applied to regular nodes
+					    return (d.data.matchCount > 0 && !d.data.isMatch) ? highlightBorderColor : '';
 					}
 				})
-				.style("stroke-width", 1) // Thickness of border
-				.on('click', function( d) {
-	                // Only show drill down if has _children (after toggle)
-	                if (typeof(d._children) !== 'undefined' && d._children.length > 0) {
-	                    // Drill down one more level
-	                    // d.data.data contains all the origional data so we just use it directly
-	                    // Note: with the new root, its depth is back to 0 again
-	                    // So we just need to use 1
-	                    renderTreemap(d.data);
-	                } else {
-	                	alert("This node has no child, it's a leaf node");
-	                }
-	            });
+				.style("stroke-width", 0.5); // Thickness of border
 
 
             // Create inner treemap for nodes that contain matches
@@ -404,8 +412,8 @@ var render = function(svgId, json, sourceArr) {
 		        .attr("y", function(d) { return d.y0; })
 		        .attr("width", function(d) { return d.x1 - d.x0; })
 		        .attr("height", function(d) { return d.y1 - d.y0; })
-		        .attr("fill", "grey")
-				.style("stroke", "orange")
+		        .attr("fill", innerTreemapBgColor)
+				.style("stroke", innerTreemapBorderColor)
 				.style("stroke-width", 0.5);
 
 		    // Node text inside node rectangle
