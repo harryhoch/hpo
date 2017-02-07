@@ -13,6 +13,14 @@ width:300px;
 margin-right:20px;
 }
 
+.nodeGroup{
+fill-opacity:0.6;
+}
+
+.nodeGroup:hover > rect{
+fill-opacity:1;
+cursor:pointer;
+}
 </style>
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
@@ -354,9 +362,10 @@ var render = function(svgId, json, sourceArr) {
 	        // Node group, can't apply style on g element
 		    var node = svg.append("g")
 		        .attr("class", "treemap")
-		        .selectAll(".node")
+		        .selectAll(".nodeGroup")
 		        .data(leaves)
 		        .enter().append("g")
+		        .attr("class", "nodeGroup")
 		        .attr("transform", function(d) { 
 		        	// Move the whole treemap down so we can see the nav bar on top of treemap
 		        	return "translate(" + d.x0 + "," + (d.y0 + adjustHeight) + ")"; 
