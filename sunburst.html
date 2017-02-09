@@ -34,6 +34,10 @@ var y = d3.scaleSqrt()
 // Will need more colors
 var color = d3.scaleOrdinal(d3.schemeCategory20);
 
+// D3 partition layout
+// https://github.com/d3/d3-hierarchy/blob/master/README.md#partition
+// partition(root) will lay out the specified root hierarchy, 
+// and assigns: x0, x1, y0, y1 to root and its descendants
 var partition = d3.partition();
 
 // A list of HP Ids from a patient with undiagnoised disease
@@ -166,6 +170,8 @@ d3.json("hp/hp_treemap.json", function(error, rootData) {
 	};
 
     // Create an arc path for each node
+    // You must call root.sum before passing the hierarchy to the partition layout. 
+    // You probably also want to call root.sort to order the hierarchy before computing the layout.
 	svg.selectAll("path")
 		.data(partition(rootNode).descendants())
 	    .enter().append("path")
