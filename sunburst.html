@@ -6,9 +6,6 @@ svg {
 font: 10px sans-serif;
 }
 
-.arc{
-stroke-width: 1;
-}
 </style>
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
@@ -24,11 +21,9 @@ var width = 700;
 var height = 700;
 var radius = (Math.min(width, height) / 2) - 10;
 
-var highlightBgColor = "#cdbfe3";
-var highlightBorderColor = "#d43f3a";
-var regularBgColor = "#ddd";
-var regularBorderColor = "#fff";
-var leafBorderColor = "#1b926c";
+var isMatchBgColor = "rgb(152, 121, 176)";
+var nonMatchBgColor = "rgb(201, 201, 201)";
+var hasMatchBgColor = "rgb(100, 163, 72)";
 
 var x = d3.scaleLinear()
     .range([0, 2 * Math.PI]);
@@ -127,6 +122,7 @@ d3.json("hp/hp_treemap.json", function(error, rootData) {
     };
 
 	// This time just focus on sizing the already modified data
+	// Sizing can cause some very tiny nodes invisible from the sunburst rendering
     var rootNode = constructRootNode(rootDataWithMatch, sumByIc);
 
     console.log("Root data with sizing based on modified data...");
@@ -167,24 +163,22 @@ d3.json("hp/hp_treemap.json", function(error, rootData) {
 	    });
 	}
 
+    // Create an arc path for each node
 	svg.selectAll("path")
 		.data(partition(rootNode).descendants())
 	    .enter().append("path")
 	    .attr("d", arc)
 	    .attr("class", "arc")
-	    .style("stroke", function(d) {
-			if (d.children === null) {
-                // Use a different border color on leaf node
-                return leafBorderColor;
-			} else {
-				// Highlight the node that contains matching children with a different border color
-				// No border color applied to regular nodes
-			    return (d.data.matchCount > 0 && !d.data.isMatch) ? highlightBorderColor : regularBorderColor;
-			}
-		})
+	    .style("stroke", "white")
+		.style("stroke-width", 1)
 	    .style("fill", function(d) { 
-	    	// Highlight the matching node with a different background color
-			return (d.data.isMatch) ? highlightBgColor : regularBgColor; 
+	    	// Here we only have 3 colors: isMatchBgColor, nonMatchBgColor, and hasMatchBgColor
+	    	if (d.data.isMatch) {
+                return isMatchBgColor;
+			} else {
+				// Highlight the node that contains matching children with a different background color
+			    return (d.data.matchCount > 0) ? hasMatchBgColor : nonMatchBgColor;
+			}
 	    })
 	    .on("click", click)
 	    .append("title")
