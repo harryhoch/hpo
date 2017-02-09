@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<head>
+<style>
+
+svg {
+font: 10px sans-serif;
+}
+
+.arc{
+stroke-width: 1;
+}
+</style>
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+</head>
+
+<body>
+
+<svg id= "hpSvg" width="700" height="700"></svg>
+
+<script>
+
+var width = 700;
+var height = 700;
+var radius = (Math.min(width, height) / 2) - 10;
+
+var highlightBgColor = "#cdbfe3";
+var highlightBorderColor = "#d43f3a";
+var regularBgColor = "#ddd";
+var regularBorderColor = "#fff";
+var leafBorderColor = "#1b926c";
+
+var x = d3.scaleLinear()
+    .range([0, 2 * Math.PI]);
+
+var y = d3.scaleSqrt()
+    .range([0, radius]);
+
+// Will need more colors
+var color = d3.scaleOrdinal(d3.schemeCategory20);
+
+var partition = d3.partition();
+
+// A list of HP Ids from a patient with undiagnoised disease
+var patientPhenotypes = [
+    "HP_0012537",
+    "HP_0000174",
+    "HP_0000194",
+    "HP_0000218",
+    "HP_0000238",
+    "HP_0000244",
+    "HP_0000272",
+    "HP_0000303",
+    "HP_0000316"
+];
+
+
+
+var svg = d3.select("#hpSvg")
+    .attr("width", width)
+    .attr("height", height)
+    .append("g")
+    .attr("transform", "translate(" + width / 2 + "," + (height / 2) + ")");
+
+d3.json("hp/hp_treemap.json", function(error, rootData) {
+  	if (error) throw error;
+    
+    // Constructs a root node from the specified hierarchical data. 
+    // The specified data must be an object representing the root node. 
+    var constructRootNode = function(data, sum) {
+        var rootNode = d3.hierarchy(data)
+	        // https://github.com/d3/d3-hierarchy/blob/master/README.md#node_sum
+	        // Must use sum before passing the hierarchy data to the treemap()
+	        .sum(sum) 
+            // https://github.com/d3/d3-hierarchy/blob/master/README.md#node_sort
+	        .sort(function(a, b) { 	
+	            // sort nodes by descending height (greatest distance from any descendant leaf) and then descending value
+	            return b.height - a.height || b.value - a.value; 
+	        });
+        
+        // The returned node and each descendant has the following added properties: 
+        // data, depth, height, parent, children, value
+	    return rootNode;
+    };
+
+    // Modify the provided root data by adding maching info
+    var calculateMatch = function(rootData) {
+        // This is used for calculating the matches
+        // the number of matches will be stored in d.value
+        var sumByMatch = function(d) {
+            return (patientPhenotypes.indexOf(d.id) !== -1) ? 1 : 0;
+        };
+
+        // Constructs a root node from the specified hierarchical data
+	    // Using sumByMatch aggregate the values (number of matches)
+	    // so we can identify the nodes that contain matches(HP ids of the patient)
+	    var rootNode = constructRootNode(rootData, sumByMatch);
+
+        // Inject the calculated match into data for later highlighting
+	    // https://github.com/d3/d3-hierarchy/#node_each
+	    rootNode.each(function(d) { 
+	        // No need to set d.value = null since we'll be using a different sum method shortly
+	        // and the d.value will be changed by then
+	        d.data.matchCount = d.value;
+            // Also mark the actual matching node
+            d.data.isMatch = (patientPhenotypes.indexOf(d.data.id) !== -1) ? true : false
+	    });
+
+        console.log("Root data with matching count...");
+        console.log(rootNode.data);
+
+        // Return the modified rootNode.data instead of the D3 hierarchy rootNode
+        // We'll use this rootNode.data as the new data to construct hierarchy 
+        // with a different sum method later
+	    return rootNode.data;
+    };
+
+    // Add calculated matches to the rootData
+	var rootDataWithMatch = calculateMatch(rootData);
+
+    // Each HP id has its own IC score specified in treemap.json
+    // Here we only accumulate the total of IC score from leaves
+    // Very similar to sumByCount, but just a different numeric value
+    var sumByIc = function(d) {
+        // because sum is done after the modification by rootNode.each? Probably
+        return (d.children.length > 0) ? 0 : d.ic;
+    };
+
+	// This time just focus on sizing the already modified data
+    var rootNode = constructRootNode(rootDataWithMatch, sumByIc);
+
+    console.log("Root data with sizing based on modified data...");
+    console.log(rootNode);
+
+    // Each node is an arc
+    var arc = d3.arc()
+	    .innerRadius(function(d) { 
+	    	return Math.max(0, y(d.y0)); 
+	    })
+	    .outerRadius(function(d) { 
+	    	return Math.max(0, y(d.y1)); 
+	    })
+	    .startAngle(function(d) { 
+	    	return Math.max(0, Math.min(2 * Math.PI, x(d.x0))); 
+	    })
+	    .endAngle(function(d) { 
+	    	return Math.max(0, Math.min(2 * Math.PI, x(d.x1))); 
+	    });
+
+
+	var click = function(d) {
+	  svg.transition()
+	    .duration(750)
+	    .tween("scale", function() {
+	        var xd = d3.interpolate(x.domain(), [d.x0, d.x1]);
+	        var yd = d3.interpolate(y.domain(), [d.y0, 1]);
+	        var yr = d3.interpolate(y.range(), [d.y0 ? 20 : 0, radius]);
+
+	        return function(t) { x.domain(xd(t)); y.domain(yd(t)).range(yr(t)); };
+		})
+	    .selectAll("path")
+	    .attrTween("d", function(d) { 
+	    	// Has to be this nested function
+	    	return function() { 
+	    		return arc(d); 
+	    	};
+	    });
+	}
+
+	svg.selectAll("path")
+		.data(partition(rootNode).descendants())
+	    .enter().append("path")
+	    .attr("d", arc)
+	    .attr("class", "arc")
+	    .style("stroke", function(d) {
+			if (d.children === null) {
+                // Use a different border color on leaf node
+                return leafBorderColor;
+			} else {
+				// Highlight the node that contains matching children with a different border color
+				// No border color applied to regular nodes
+			    return (d.data.matchCount > 0 && !d.data.isMatch) ? highlightBorderColor : regularBorderColor;
+			}
+		})
+	    .style("fill", function(d) { 
+	    	// Highlight the matching node with a different background color
+			return (d.data.isMatch) ? highlightBgColor : regularBgColor; 
+	    })
+	    .on("click", click)
+	    .append("title")
+	    .text(function(d) { 
+	    	return d.data.name + "\n" + "[" + d.data.id + "]"; 
+	    });
+});
+
+
+
+d3.select(self.frameElement).style("height", height + "px");
+
+</script>
+
+</body>
+
+</html>
