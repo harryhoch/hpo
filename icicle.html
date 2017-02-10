@@ -17,20 +17,19 @@ font: 10px sans-serif;
 
 <script>
 
-var width = 700;
+var width = 900;
 var height = 700;
-var radius = (Math.min(width, height) / 2) - 10;
+
+var x = d3.scaleLinear()
+    .range([0, width]);
+
+var y = d3.scaleSqrt()
+    .range([0, height]);
 
 var rootBgColor = "rgb(223, 134, 59)";
 var isMatchBgColor = "rgb(100, 163, 72)";
 var nonMatchBgColor = "rgb(201, 201, 201)";
 var hasMatchBgColor = "rgb(152, 121, 176)";
-
-var x = d3.scaleLinear()
-    .range([0, 2 * Math.PI]);
-
-var y = d3.scaleSqrt()
-    .range([0, radius]);
 
 // D3 partition layout
 // https://github.com/d3/d3-hierarchy/blob/master/README.md#partition
@@ -55,9 +54,7 @@ var patientPhenotypes = [
 
 var svg = d3.select("#hpSvg")
     .attr("width", width)
-    .attr("height", height)
-    .append("g")
-    .attr("transform", "translate(" + width / 2 + "," + (height / 2) + ")");
+    .attr("height", height);
 
 d3.json("hp/hp_treemap.json", function(error, rootData) {
   	if (error) throw error;
@@ -84,12 +81,6 @@ d3.json("hp/hp_treemap.json", function(error, rootData) {
     // the number of matches will be stored in d.value
     var sumByMatch = function(d) {
         return (patientPhenotypes.indexOf(d.id) !== -1) ? 1 : 0;
-    };
-
-    // No matter how we change the sizing measurement, 
-    // the categories with very few children will still be invisible
-    var sumByMatchForSizing = function(d) {
-        return (patientPhenotypes.indexOf(d.id) !== -1) ? 2 : 1;
     };
 
     // Each HP id has its own IC score specified in treemap.json
@@ -132,80 +123,33 @@ d3.json("hp/hp_treemap.json", function(error, rootData) {
     
 
 	// This time just focus on sizing the already modified data
-	// Sizing can cause some very tiny nodes invisible from the sunburst rendering
-    var rootNode = constructRootNode(rootDataWithMatch, sumByMatchForSizing);
+    var rootNode = constructRootNode(rootDataWithMatch, sumByIc);
 
     console.log("Root data with sizing based on modified data...");
     console.log(rootNode);
 
-    // Add background circle
-    svg.append("circle")
-        .attr("cx", 0)
-        .attr("cy", 0)
-        .attr("r", radius)
-        .style("fill", "rgb(238, 238, 238)");
-    
-    // Each node is an arc
-    var arc = d3.arc()
-	    .innerRadius(function(d) { 
-	    	return Math.max(0, y(d.y0)); 
-	    })
-	    .outerRadius(function(d) { 
-	    	return Math.max(0, y(d.y1)); 
-	    })
-	    .startAngle(function(d) { 
-	    	return Math.max(0, Math.min(2 * Math.PI, x(d.x0))); 
-	    })
-	    .endAngle(function(d) { 
-	    	return Math.max(0, Math.min(2 * Math.PI, x(d.x1))); 
-	    });
 
-
-	var click = function(d) {
-	  svg.transition()
-	    .duration(750)
-	    // https://github.com/d3/d3-transition#transition_tween
-	    .tween("scale", function() {
-	        var xd = d3.interpolate(x.domain(), [d.x0, d.x1]);
-	        var yd = d3.interpolate(y.domain(), [d.y0, 1]);
-	        var yr = d3.interpolate(y.range(), [d.y0 ? 20 : 0, radius]);
-
-	        return function(t) { x.domain(xd(t)); y.domain(yd(t)).range(yr(t)); };
-		})
-	    .selectAll(".arc")
-	    // https://github.com/d3/d3-transition#transition_attrTween
-	    .attrTween("d", function(d) { 
-	    	// Has to be this nested function
-	    	return function() { 
-	    		return arc(d); 
-	    	};
-	    });
-	};
 
     // Array of descendant nodes, starting with root node, then followed by each child in topological order
     var allDescendants = partition(rootNode).descendants();
 
-    var matchingDescendants = allDescendants.filter(function(d) {
-        return (d.data.isMatch || (d.data.matchCount > 0)) ? true : false;
-    });
-
     // Node group, can't apply style on g element
     var node = svg.append("g")
-        .attr("class", "sunburst")
+        .attr("class", "icicle")
         .selectAll(".nodeGroup")
         .data(allDescendants)
-        //.data(matchingDescendants)
         .enter().append("g")
         .attr("class", "nodeGroup");
 
     // Create an arc path for each node
     // You must call root.sum before passing the hierarchy to the partition layout. 
     // You probably also want to call root.sort to order the hierarchy before computing the layout.
-    node.append("path")
-	    .attr("d", arc)
-	    .attr("class", "arc")
-	    .style("stroke", "white")
-		.style("stroke-width", 1)
+    node.append("rect")
+	    .attr("x", function(d) { return x(d.x0); })
+		.attr("y", function(d) { return y(d.y0); })
+		.attr("width", function(d) { return x(d.x1 - d.x0); })
+		.attr("height", function(d) { return y(d.y1 - d.y0); })
+		.style("stroke", "#fff")
 	    .style("fill", function(d) { 
 	    	if (d.parent === null) {
                 // Give root its own bg color
@@ -220,45 +164,10 @@ d3.json("hp/hp_treemap.json", function(error, rootData) {
 				}
 	    	}
 	    })
-	    .on("click", click)
 	    .append("title")
 	    .text(function(d) { 
 	    	return d.data.name + "\n" + "[" + d.data.id + "]"; 
 	    });
-
-/*
-    var categoryArc = d3.arc()
-	    .innerRadius(function(d) { 
-	    	return y(d.parent.y1); 
-	    })
-	    .outerRadius(function(d) { 
-	    	return radius;
-	    })
-	    .startAngle(function(d) { 
-	    	return Math.max(0, Math.min(2 * Math.PI, x(d.x0))); 
-	    })
-	    .endAngle(function(d) { 
-	    	return Math.max(0, Math.min(2 * Math.PI, x(d.x1))); 
-	    });
-
-
-    // Create regions based on direct sub categories
-	node.filter((function(d) {
-        	// Find all direct sub categories of the root
-        	return (d.parent !== null && d.parent.data.id === "HP_0000118");
-        }))
-		.append("path")
-		.attr("d", categoryArc)
-		.attr("class", "category")
-		.style("fill", "rgb(238, 238, 238)")
-		.style("stroke", "white")
-		.style("stroke-width", 2)
-		.append("title")
-	    .text(function(d) { 
-	    	return d.data.name + "\n" + "[" + d.data.id + "]"; 
-	    });
-*/
-
 });
 
 
