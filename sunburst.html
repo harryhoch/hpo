@@ -83,14 +83,28 @@ d3.json("hp/hp_treemap.json", function(error, rootData) {
 	    return rootNode;
     };
 
+    // This is used for calculating the matches
+    // the number of matches will be stored in d.value
+    var sumByMatch = function(d) {
+        return (patientPhenotypes.indexOf(d.id) !== -1) ? 1 : 0;
+    };
+
+    // No matter how we change the sizing measurement, 
+    // the categories with very few children will still be invisible
+    var sumByMatchForSizing = function(d) {
+        return (patientPhenotypes.indexOf(d.id) !== -1) ? 1 : 0;
+    };
+
+    // Each HP id has its own IC score specified in treemap.json
+    // Here we only accumulate the total of IC score from leaves
+    // Very similar to sumByCount, but just a different numeric value
+    var sumByIc = function(d) {
+        // because sum is done after the modification by rootNode.each? Probably
+        return (d.children.length > 0) ? 0 : d.ic;
+    };
+
     // Modify the provided root data by adding maching info
     var calculateMatch = function(rootData) {
-        // This is used for calculating the matches
-        // the number of matches will be stored in d.value
-        var sumByMatch = function(d) {
-            return (patientPhenotypes.indexOf(d.id) !== -1) ? 1 : 0;
-        };
-
         // Constructs a root node from the specified hierarchical data
 	    // Using sumByMatch aggregate the values (number of matches)
 	    // so we can identify the nodes that contain matches(HP ids of the patient)
@@ -118,17 +132,11 @@ d3.json("hp/hp_treemap.json", function(error, rootData) {
     // Add calculated matches to the rootData
 	var rootDataWithMatch = calculateMatch(rootData);
 
-    // Each HP id has its own IC score specified in treemap.json
-    // Here we only accumulate the total of IC score from leaves
-    // Very similar to sumByCount, but just a different numeric value
-    var sumByIc = function(d) {
-        // because sum is done after the modification by rootNode.each? Probably
-        return (d.children.length > 0) ? 0 : d.ic;
-    };
+    
 
 	// This time just focus on sizing the already modified data
 	// Sizing can cause some very tiny nodes invisible from the sunburst rendering
-    var rootNode = constructRootNode(rootDataWithMatch, sumByIc);
+    var rootNode = constructRootNode(rootDataWithMatch, sumByMatchForSizing);
 
     console.log("Root data with sizing based on modified data...");
     console.log(rootNode);
