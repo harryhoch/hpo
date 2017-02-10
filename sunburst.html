@@ -179,11 +179,16 @@ d3.json("hp/hp_treemap.json", function(error, rootData) {
     // Array of descendant nodes, starting with root node, then followed by each child in topological order
     var allDescendants = partition(rootNode).descendants();
 
+    var matchingDescendants = allDescendants.filter(function(d) {
+        return (d.data.isMatch || (d.data.matchCount > 0)) ? true : false;
+    });
+
     // Node group, can't apply style on g element
     var node = svg.append("g")
         .attr("class", "sunburst")
         .selectAll(".nodeGroup")
         .data(allDescendants)
+        //.data(matchingDescendants)
         .enter().append("g")
         .attr("class", "nodeGroup");
 
