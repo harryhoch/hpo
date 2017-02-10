@@ -21,6 +21,7 @@ var width = 700;
 var height = 700;
 var radius = (Math.min(width, height) / 2) - 10;
 
+var rootBgColor = "rgb(223, 134, 59)";
 var isMatchBgColor = "rgb(100, 163, 72)";
 var nonMatchBgColor = "rgb(201, 201, 201)";
 var hasMatchBgColor = "rgb(152, 121, 176)";
@@ -201,13 +202,18 @@ d3.json("hp/hp_treemap.json", function(error, rootData) {
 	    .style("stroke", "white")
 		.style("stroke-width", 1)
 	    .style("fill", function(d) { 
-	    	// Here we only have 3 colors: isMatchBgColor, nonMatchBgColor, and hasMatchBgColor
-	    	if (d.data.isMatch) {
-                return isMatchBgColor;
-			} else {
-				// Highlight the node that contains matching children with a different background color
-			    return (d.data.matchCount > 0) ? hasMatchBgColor : nonMatchBgColor;
-			}
+	    	if (d.parent === null) {
+                // Give root its own bg color
+                return rootBgColor;
+	    	} else {
+	    	    // Here we only have 3 colors: isMatchBgColor, nonMatchBgColor, and hasMatchBgColor
+		    	if (d.data.isMatch) {
+	                return isMatchBgColor;
+				} else {
+					// Highlight the node that contains matching children with a different background color
+				    return (d.data.matchCount > 0) ? hasMatchBgColor : nonMatchBgColor;
+				}
+	    	}
 	    })
 	    .on("click", click)
 	    .append("title")
