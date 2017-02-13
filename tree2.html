@@ -116,7 +116,9 @@ function update(source) {
       .attr("transform", function(d) {
         return "translate(" + source.y0 + "," + source.x0 + ")";
     })
-    .on('click', click);
+    .on('click', click)
+    .on('mouseover',showLabel)
+    .on('mouseout',removeLabel);
 
   // Add Circle for the nodes
   nodeEnter.append('circle')
@@ -127,7 +129,7 @@ function update(source) {
       });
 
   // Add labels for the nodes
-  nodeEnter.append('text')
+ /* nodeEnter.append('text')
       .attr("dy", ".35em")
       .attr("x", function(d) {
           return d.children || d._children ? -13 : 13;
@@ -135,9 +137,9 @@ function update(source) {
       .attr("text-anchor", function(d) {
           return d.children || d._children ? "end" : "start";
       })
-      .text(function(d) { return d.data.name; });
+      .text(function(d) { return d.data.name; });*/
 
-  // UPDATE
+  // Update
   var nodeUpdate = nodeEnter.merge(node);
 
   // Transition to the proper position for the node
@@ -232,6 +234,24 @@ function update(source) {
       }
     update(d);
   }
+
+ //https://gist.github.com/sfrdmn/1437516
+ function showLabel() {
+   node.append('text')
+      .attr("dy", ".35em")
+      .attr("x", function(d) {
+          return d.children || d._children ? -13 : 13;
+      })
+      .attr("text-anchor", function(d) {
+          return d.children || d._children ? "end" : "start";
+      })
+      .text(function(d) { return d.data.name; });
+  }
+
+  function removeLabel() {
+     var node = d3.select(this).select("text").remove();
+  }
+
 }
 </script> 
 </body>
