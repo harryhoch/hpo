@@ -41,7 +41,7 @@ font: 10px sans-serif;
 // Set the dimensions and margins of the diagram
 var margin = {top: 20, right: 90, bottom: 30, left: 140};
 var width = 1060 - margin.left - margin.right;
-var height = 600 - margin.top - margin.bottom;
+var height = 680 - margin.top - margin.bottom;
 
 // append the svg object to the body of the page
 // appends a 'group' element to 'svg'
@@ -139,46 +139,8 @@ function update(source) {
 			return "translate(" + source.y0 + "," + source.x0 + ")";
 		})
 		.on('click', click)
-		.on('mouseover', function(d) {
-			// Add label
-			// Need to avoid to creating this label every time on mouseover
-			if (!d.labelCreated) {
-				d3.select(this).append('text')
-					.attr("y", 2)
-					.attr("x", function(d) {
-						return (d.children || d._children) ? -15 : 15;
-					})
-					.attr("class", "node-label")
-					.attr("text-anchor", function(d) {
-						// Place label on left if node has children,
-						// otherwise on right of the node
-						return (d.children || d._children) ? "end" : "start";
-					})
-					.text(function(d) { 
-						return d.data.name; 
-					});
-
-                // So we know this node has label created already
-			    d.labelCreated = true;
-			}
-		})
-		.on('mouseout', function(d) {
-            // When mouseout, d.labelCreated must have been set as true,
-            // so no need to check it
-            if (d.collapsed) {
-                // Remove label only if this node is not expanded
-                d3.select(this).select("text").remove();
-                // Reset the flag
-        	    d.labelCreated = false;
-            } else {
-            	if (d.leaf) {
-            		// Remove label of leaf node
-		            d3.select(this).select("text").remove();
-		            // Reset the flag
-		    	    d.labelCreated = false;
-            	}
-            }
-		});
+		.on('mouseover', mouseover)
+		.on('mouseout', mouseout);
 
 	// Add Circle for the node
 	nodeEnter.append('circle')
@@ -308,6 +270,43 @@ function update(source) {
 		}
 
 		update(d);
+	}
+
+    // Create label text if there's not one
+	function mouseover(d) {
+		// Need to avoid to creating this label every time on mouseover
+		if (!d.labelCreated) {
+			d3.select(this).append('text')
+				.attr("y", 2)
+				.attr("x", function(d) {
+					return (d.children || d._children) ? -15 : 15;
+				})
+				.attr("class", "node-label")
+				.attr("text-anchor", function(d) {
+					// Place label on left if node has children,
+					// otherwise on right of the node
+					return (d.children || d._children) ? "end" : "start";
+				})
+				.text(function(d) { 
+					return d.data.name; 
+				});
+
+            // So we know this node has label created already
+		    d.labelCreated = true;
+		}
+	}
+
+    // For leaf nodes and nodes with children but collapsed, remove the label text
+    // For nodes with children but expanded, leave the label there
+	function mouseout(d) {
+	    // When mouseout, d.labelCreated must have been set as true,
+	    // so no need to check it
+	    if (d.leaf || (!d.leaf && d.collapsed)) {
+	        // Remove label text
+	        d3.select(this).select("text").remove();
+	        // Reset the flag
+		    d.labelCreated = false;
+	    } 
 	}
 
 }
