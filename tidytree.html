@@ -6,17 +6,18 @@ svg {
 font: 10px sans-serif;
 }
 
-.node {
-  cursor: pointer;
+.node-group {
+  
 }
 
 .node-circle {
+  cursor: pointer;
   fill: #fff;
   stroke: steelblue;
   stroke-width: 1.5px;
 }
 
-.node text {
+.node-group text {
   font: 10px sans-serif;
 }
 
@@ -56,9 +57,9 @@ var rootNode;
 var i = 0;
 var duration = 750;
 
-// declares a tree layout and assigns the size
+// Declares a tree layout and assigns the size
 var tree = d3.tree()
-            .size([height, width]);
+	.size([height, width]);
 
 // The principle behind d3.json() is to do everything in this function, 
 // which will be executed when the json is loaded
@@ -106,26 +107,50 @@ function update(source) {
 	// ****************** Nodes section ***************************
 
 	// Update the nodes...
-	var node = svg.selectAll('.node')
+	var node = svg.selectAll('.node-group')
 		.data(nodes, function(d) {
 			return d.id || (d.id = ++i); 
 		});
 
+
 	// Enter any new modes at the parent's previous position.
 	var nodeEnter = node.enter().append('g')
-		.attr('class', 'node')
+		.attr('class', 'node-group')
+		.attr("id", function(d) {
+			return d.data.id;
+		})
 		.attr("transform", function(d) {
 			return "translate(" + source.y0 + "," + source.x0 + ")";
 		})
 		.on('click', click)
-		.on('mouseover', showLabel)
-		.on('mouseout', removeLabel);
+		.on('mouseover', function(d) {
+			// Add label
+			d3.select(this).append('text')
+				.attr("y", 2)
+				.attr("x", function(d) {
+					return (d.children || d._children) ? -15 : 15;
+				})
+				.attr("text-anchor", function(d) {
+					// Place label on left if node has children,
+					// otherwise on right of the node
+					return (d.children || d._children) ? "end" : "start";
+				})
+				.text(function(d) { 
+					return d.data.name; 
+				});
+		})
+		.on('mouseout', function(d) {
+            // Remove label
+			d3.select(this).select("text").remove();
+		});
 
 	// Add Circle for the node
 	nodeEnter.append('circle')
 		.attr('class', 'node-circle')
 		.attr('r', 1e-6)
 		.style("fill", function(d) {
+			// Fill the circle of node with children
+			// Leave it empty for leaf nodes
 			return d._children ? "lightsteelblue" : "#fff";
 		});
 
@@ -218,10 +243,7 @@ function update(source) {
 
 	// Creates a curved (diagonal) path from parent to the child nodes
 	function diagonal(s, d) {
-		var path = `M ${s.y} ${s.x}
-		C ${(s.y + d.y) / 2} ${s.x},
-		${(s.y + d.y) / 2} ${d.x},
-		${d.y} ${d.x}`;
+		var path = `M ${s.y} ${s.x} C ${(s.y + d.y) / 2} ${s.x}, ${(s.y + d.y) / 2} ${d.x}, ${d.y} ${d.x}`;
 
 		return path;
 	}
@@ -240,22 +262,6 @@ function update(source) {
 		update(d);
 	}
 
-	//https://gist.github.com/sfrdmn/1437516
-	function showLabel() {
-		node.append('text')
-			.attr("dy", ".35em")
-			.attr("x", function(d) {
-				return d.children || d._children ? -13 : 13;
-			})
-			.attr("text-anchor", function(d) {
-				return d.children || d._children ? "end" : "start";
-			})
-			.text(function(d) { return d.data.name; });
-	}
-
-	function removeLabel() {
-		var node = d3.select(this).select("text").remove();
-	}
 }
 
 </script> 
