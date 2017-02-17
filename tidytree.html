@@ -64,6 +64,21 @@ var patientPhenotypes = [
     "HP_0000316"
 ];
 
+// Make rootNode a global variable
+var rootNode;
+var i = 0;
+var duration = 750;
+
+var rootBgColor = "rgb(152, 121, 176)";
+var isMatchBgColor = "rgb(100, 163, 72)";
+var hasMatchBgColor = "rgb(223, 134, 59)";
+var hasNoMatchRegularBgColor = "rgb(176, 196, 222)";
+var hasNoMatchLeafBgColor = "rgb(255, 255, 255)";
+
+// Declares a tree layout and assigns the size
+var tree = d3.tree()
+	.size([height, width]);
+
 // Modify the provided root data by adding maching info
 var calculateMatch = function(rootData) {
     // This is used for calculating the matches
@@ -106,20 +121,6 @@ var calculateMatch = function(rootData) {
     return rootNode.data;
 };
 
-// Make rootNode a global variable
-var rootNode;
-var i = 0;
-var duration = 750;
-
-var rootBgColor = "rgb(152, 121, 176)";
-var isMatchBgColor = "rgb(100, 163, 72)";
-var hasMatchBgColor = "rgb(223, 134, 59)";
-var hasNoMatchRegularBgColor = "rgb(176, 196, 222)";
-var hasNoMatchLeafBgColor = "rgb(255, 255, 255)";
-
-// Declares a tree layout and assigns the size
-var tree = d3.tree()
-	.size([height, width]);
 
 // The principle behind d3.json() is to do everything in this function, 
 // which will be executed when the json is loaded
@@ -189,7 +190,6 @@ function update(source) {
 			return d.id || (d.id = ++i); 
 		});
 
-
 	// Enter any new modes at the parent's previous position.
 	var nodeEnter = node.enter().append('g')
 		.attr('class', 'node-group')
@@ -206,6 +206,19 @@ function update(source) {
 	// Add Circle for the node
 	nodeEnter.append('circle')
 		.attr('class', 'node-circle');
+    
+    // Filter out the root node and create its label on left
+    nodeEnter.filter((function(d) {
+        	// Find the root node
+        	return (d.parent == null);
+        }))
+		.append('text')
+		.attr("y", 3)
+		.attr("x", -12)
+		.attr("text-anchor", "end")
+		.text(function(d) { 
+			return d.data.name; 
+		});
 
 	// Update
 	var nodeUpdate = nodeEnter.merge(node);
@@ -304,6 +317,7 @@ function update(source) {
 
 	// Toggle children on click
 	// Click event only applies to nodes with children
+	// Note: we apply click event on the root node
 	function click(d) {
 		if (d.children) {
 			// When d.children is set, it means this node is expanded
@@ -325,11 +339,12 @@ function update(source) {
 	}
 
     // Create label text if there's not one
+    // Don't apply mouseover on root node
 	function mouseover(d) {
 		// Need to avoid to creating this label every time on mouseover
-		if (!d.labelCreated) {
+		if (d.parent != null && !d.labelCreated) {
 			d3.select(this).append('text')
-				.attr("y", 2)
+				.attr("y", 3)
 				.attr("x", function(d) {
 					return (d.children || d._children) ? -12 : 12;
 				})
@@ -350,15 +365,18 @@ function update(source) {
 
     // For leaf nodes and nodes with children but collapsed, remove the label text
     // For nodes with children but expanded, leave the label there
+    // Don't apply mouseout on root node
 	function mouseout(d) {
-	    // When mouseout, d.labelCreated must have been set as true,
-	    // so no need to check it
-	    if (d.leaf || (!d.leaf && d.collapsed)) {
-	        // Remove label text
-	        d3.select(this).select("text").remove();
-	        // Reset the flag
-		    d.labelCreated = false;
-	    } 
+	    if (d.parent != null) {
+            // When mouseout, d.labelCreated must have been set as true,
+		    // so no need to check it
+		    if (d.leaf || (!d.leaf && d.collapsed)) {
+		        // Remove label text
+		        d3.select(this).select("text").remove();
+		        // Reset the flag
+			    d.labelCreated = false;
+		    } 
+	    }
 	}
 
 }
