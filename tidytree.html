@@ -96,7 +96,13 @@ function collapse(d) {
 		// Add a flag
 		// Leaf nodes don't have this flag
 		d.collapsed = true;
-	} 
+
+		// Not leaf node
+		d.leaf = false;
+	} else {
+		// Mark it as leaf node
+		d.leaf = true;
+	}
 }
 
 function update(source) {
@@ -157,11 +163,20 @@ function update(source) {
 			}
 		})
 		.on('mouseout', function(d) {
-            if (d.labelCreated && d.collapsed) {
-            	// Remove label only if this node is not expanded
+            // When mouseout, d.labelCreated must have been set as true,
+            // so no need to check it
+            if (d.collapsed) {
+                // Remove label only if this node is not expanded
                 d3.select(this).select("text").remove();
                 // Reset the flag
         	    d.labelCreated = false;
+            } else {
+            	if (d.leaf) {
+            		// Remove label of leaf node
+		            d3.select(this).select("text").remove();
+		            // Reset the flag
+		    	    d.labelCreated = false;
+            	}
             }
 		});
 
