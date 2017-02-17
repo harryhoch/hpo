@@ -17,7 +17,7 @@ font: 10px sans-serif;
   stroke-width: 1.5px;
 }
 
-.node-group text {
+.node-label {
   font: 10px sans-serif;
 }
 
@@ -40,7 +40,7 @@ font: 10px sans-serif;
 
 // Set the dimensions and margins of the diagram
 var margin = {top: 20, right: 90, bottom: 30, left: 140};
-var width = 960 - margin.left - margin.right;
+var width = 1060 - margin.left - margin.right;
 var height = 600 - margin.top - margin.bottom;
 
 // append the svg object to the body of the page
@@ -82,11 +82,21 @@ d3.select(self.frameElement).style("height", "800px");
 
 // Collapse the node and all its children
 function collapse(d) {
+	// By default, assume all nodes have no labels created
+	// all nodes are expanded
+	d.labelCreated = false;
+	d.collapsed = false;
+
+	// Only collapse nodes with children
 	if (d.children) {
 		d._children = d.children;
 		d._children.forEach(collapse);
 		d.children = null;
-	}
+
+		// Add a flag
+		// Leaf nodes don't have this flag
+		d.collapsed = true;
+	} 
 }
 
 function update(source) {
@@ -125,23 +135,34 @@ function update(source) {
 		.on('click', click)
 		.on('mouseover', function(d) {
 			// Add label
-			d3.select(this).append('text')
-				.attr("y", 2)
-				.attr("x", function(d) {
-					return (d.children || d._children) ? -15 : 15;
-				})
-				.attr("text-anchor", function(d) {
-					// Place label on left if node has children,
-					// otherwise on right of the node
-					return (d.children || d._children) ? "end" : "start";
-				})
-				.text(function(d) { 
-					return d.data.name; 
-				});
+			// Need to avoid to creating this label every time on mouseover
+			if (!d.labelCreated) {
+				d3.select(this).append('text')
+					.attr("y", 2)
+					.attr("x", function(d) {
+						return (d.children || d._children) ? -15 : 15;
+					})
+					.attr("class", "node-label")
+					.attr("text-anchor", function(d) {
+						// Place label on left if node has children,
+						// otherwise on right of the node
+						return (d.children || d._children) ? "end" : "start";
+					})
+					.text(function(d) { 
+						return d.data.name; 
+					});
+
+                // So we know this node has label created already
+			    d.labelCreated = true;
+			}
 		})
 		.on('mouseout', function(d) {
-            // Remove label
-			d3.select(this).select("text").remove();
+            if (d.labelCreated && d.collapsed) {
+            	// Remove label only if this node is not expanded
+                d3.select(this).select("text").remove();
+                // Reset the flag
+        	    d.labelCreated = false;
+            }
 		});
 
 	// Add Circle for the node
@@ -248,15 +269,27 @@ function update(source) {
 		return path;
 	}
 
-	// Toggle children on click.
+	// Toggle children on click
+	// Click event only applies to nodes with children
 	function click(d) {
 		if (d.children) {
+			// When d.children is set, it means this node is expanded
+			// no we need to collapse it again
 			collapse(d);
 			// d._children = d.children;
 			//d.children = null;
 		} else {
-			d.children = d._children;
-			d._children = null;
+			// When d.children is not set, it could be 
+			// a collapsed node or a leaf node
+			if (d._children) {
+                d.children = d._children;
+			    d._children = null;
+
+			    // Mark this node is not collapsed
+			    d.collapsed = false;
+			} 
+            
+            // Do nothing to the leaf node
 		}
 
 		update(d);
