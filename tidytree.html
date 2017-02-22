@@ -130,6 +130,14 @@ d3.json("hp/hp_treemap.json", function(error, rootData) {
     // Add calculated matches to the rootData
     var rootDataWithMatch = calculateMatch(rootData);
 
+    buildDOITree(rootDataWithMatch);
+
+console.log("DOITree...");
+console.log(rootDataWithMatch);
+
+    // Copy _children to children so d3 tree can render it correctly
+    rename(rootDataWithMatch);
+
     // Assigns parent, children, height, data, depth, value
     rootNode = d3.hierarchy(rootDataWithMatch);
 
@@ -144,6 +152,50 @@ d3.json("hp/hp_treemap.json", function(error, rootData) {
 });
 
 d3.select(self.frameElement).style("height", "800px");
+
+// Recurisively copy _children to children 
+// so d3 tree can render it correctly
+function rename(nodeData) {
+	nodeData.children = nodeData._children;
+
+	for (var i = 0; i < nodeData._children.length; i++) {
+        rename(nodeData._children[i]);
+    }
+
+    // Remove this _children property
+	delete nodeData._children;
+}
+
+// Build DOI Tree recurisively
+function buildDOITree(nodeData) {
+    // Add new property _children to store grouping info
+    nodeData._children = [];
+    
+    // Only add the noMatch grouping if there's matches
+    //if (nodeData.matchCount > 0) {
+        var noMatch = {};
+	    noMatch.id = "HP_";
+	    noMatch.name = "No Match Group";
+	    noMatch._children = [];
+
+        nodeData._children.push(noMatch);
+
+        for (var i = 0; i < nodeData.children.length; i++) {
+	        if (nodeData.children[i].matchCount > 0) {
+	            nodeData._children.push(nodeData.children[i]);
+	        } else {
+				// Add to noMatch group
+				nodeData._children[0]._children.push(nodeData.children[i]);
+	        }
+
+	        buildDOITree(nodeData.children[i]);
+	    }
+    // } else {
+    //     nodeData._children = nodeData.children;
+    // }
+
+    delete nodeData.children;
+}
 
 // Collapse the node and all its children
 function collapse(d) {
@@ -175,6 +227,7 @@ function update(source) {
 	// Update the nodes...
 	var node = svg.selectAll('.node-group')
 		.data(nodes, function(d) {
+			// I don't understand this key function
 			return d.id || (d.id = ++i); 
 		});
 
@@ -208,7 +261,7 @@ function update(source) {
 			return d.data.name; 
 		});
 
-	// Update
+	// Merge the enter and update selections after a data-join
 	var nodeUpdate = nodeEnter.merge(node);
 
 	// Transition to the proper position for the node
@@ -271,7 +324,7 @@ function update(source) {
 			return diagonal(o, o);
 		});
 
-	// UPDATE
+	// Merge the enter and update selections after a data-join
 	var linkUpdate = linkEnter.merge(link);
 
 	// Transition back to the parent element position
