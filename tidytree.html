@@ -147,24 +147,12 @@ d3.select(self.frameElement).style("height", "800px");
 
 // Collapse the node and all its children
 function collapse(d) {
-	// By default, assume all nodes have no labels created
-	// all nodes are expanded
-	d.labelCreated = false;
-	d.collapsed = false;
 	// Only collapse nodes with children
 	if (d.children) {
 		d._children = d.children;
 		d._children.forEach(collapse);
 		d.children = null;
-		// Add a flag
-		// Leaf nodes don't have this flag
-		d.collapsed = true;
-		// Not leaf node
-		d.leaf = false;
-	} else {
-		// Mark it as leaf node
-		d.leaf = true;
-	}
+	} 
 }
 
 function update(source) {
@@ -329,9 +317,6 @@ function update(source) {
 			if (d._children) {
                 d.children = d._children;
 			    d._children = null;
-
-			    // Mark this node as not collapsed
-			    d.collapsed = false;
 			} 
 		}
 
@@ -357,9 +342,6 @@ function update(source) {
 				.text(function(d) { 
 					return d.data.name; 
 				});
-
-            // So we know this node has label created already
-		    d.labelCreated = true;
 		}
 	}
 
@@ -368,14 +350,10 @@ function update(source) {
     // Don't apply mouseout on root node
 	function mouseout(d) {
 	    if (d.parent != null) {
-            // When mouseout, d.labelCreated must have been set as true,
-		    // so no need to check it
-		    if (d.leaf || (!d.leaf && d.collapsed)) {
-		        // Remove label text
-		        d3.select(this).select("text").remove();
-		        // Reset the flag
-			    d.labelCreated = false;
-		    } 
+	        // Remove label text
+	        d3.select(this).select("text").remove();
+	        // Reset the flag
+		    d.labelCreated = false;
 	    }
 	}
 
