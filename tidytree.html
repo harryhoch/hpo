@@ -410,6 +410,10 @@ function update(source) {
 	// Click event only applies to nodes with children
 	// Note: we apply click event on the root node
 	function click(d) {
+		// First to remove all labels before transition
+		// so labels won't stay at old positions
+		mouseout(d);
+
 		if (d.children) {
 			// When d.children is set, it means this node is expanded
 			// recurisively collapse its children
