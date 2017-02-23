@@ -426,38 +426,42 @@ function update(source) {
 		update(d);
 	}
 
-    // Create label text if there's not one
-    // Don't apply mouseover on root node
-	function mouseover(d) {
-		// Need to avoid to creating this label every time on mouseover
-		if (d.parent != null && !d.labelCreated) {
-			d3.select(this).append('text')
-				.attr("y", 3)
-				.attr("x", function(d) {
-					return (d.children || d._children) ? -12 : 12;
-				})
-				.attr("class", "node-label")
-				.attr("text-anchor", function(d) {
-					// Place label on left if node has children,
-					// otherwise on right of the node
-					return (d.children || d._children) ? "end" : "start";
-				})
-				.text(function(d) { 
-					return (d.data.id !== "HP_") ? d.data.name + " [" + d.data.id + "]" : d.data.name; 
-				});
-		}
+    // Show labels, starting with this node, then followed by each parent up to the root
+    // but no label gets created for root since it's already there
+	function mouseover(node) {
+		var nodes = node.ancestors();
+		// Remove the root node
+		var nodesToCreateLabels = nodes.slice(0, nodes.length - 1);
+
+        svg.selectAll(".node-label")
+			.data(nodesToCreateLabels)
+			.enter()
+			.append('text')
+			.attr("x", function(d) {
+				return (d.children || d._children) ? -12 : + 12;
+			})
+			.attr("y", 3)
+			.attr("transform", function(d) {
+				return "translate(" + d.y0 + "," + d.x0 + ")";
+			})
+			.attr("class", "node-label")
+			.attr("text-anchor", function(d) {
+				// Place label on left if node has children,
+				// otherwise on right of the node
+				return (d.children || d._children) ? "end" : "start";
+			})
+			.text(function(d) { 
+				return (d.data.id !== "HP_") ? d.data.name + " [" + d.data.id + "]" : d.data.name; 
+			});
 	}
 
-    // For leaf nodes and nodes with children but collapsed, remove the label text
-    // For nodes with children but expanded, leave the label there
-    // Don't apply mouseout on root node
-	function mouseout(d) {
-	    if (d.parent != null) {
-	        // Remove label text
-	        d3.select(this).select("text").remove();
-	        // Reset the flag
-		    d.labelCreated = false;
-	    }
+    // Remove all labels of ancestors nodes except the root node
+	function mouseout(node) {
+	    var nodes = node.ancestors();
+	    // Remove the root node
+		var nodesToRemoveLabels = nodes.slice(0, nodes.length - 1);
+	    
+	    svg.selectAll(".node-label").remove();
 	}
 
 }
