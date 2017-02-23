@@ -11,7 +11,7 @@ font: 10px sans-serif;
 }
 
 .node-circle,
-.no-match-rect {
+.node-rect {
   cursor: pointer;
   stroke: steelblue;
   stroke-width: 1.5px;
@@ -39,7 +39,7 @@ font: 10px sans-serif;
 <script>
 
 // Set the dimensions and margins of the diagram
-var margin = {top: 20, right: 90, bottom: 30, left: 140};
+var margin = {top: 20, right: 90, bottom: 30, left: 200};
 var width = 1060 - margin.left - margin.right;
 var height = 680 - margin.top - margin.bottom;
 
@@ -269,7 +269,7 @@ function update(source) {
         	return (d.data.id === "HP_");
         }))
 		.append('rect')
-		.attr("class", "no-match-rect");
+		.attr("class", "node-rect");
 
     // Filter out the root node and create its label on left
     nodeEnter.filter((function(d) {
@@ -315,7 +315,7 @@ function update(source) {
 	    	}
 		});
 
-    nodeUpdate.select('.no-match-rect')
+    nodeUpdate.select('.node-rect')
 		.attr('x', -6) // -width/2 to center
 		.attr('y', -6) // -height/2 to center
 		.attr('width', 12)
@@ -443,7 +443,7 @@ function update(source) {
 					return (d.children || d._children) ? "end" : "start";
 				})
 				.text(function(d) { 
-					return d.data.name; 
+					return (d.data.id !== "HP_") ? d.data.name + " [" + d.data.id + "]" : d.data.name; 
 				});
 		}
 	}
