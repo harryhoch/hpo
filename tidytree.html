@@ -7,26 +7,28 @@ font: 10px sans-serif;
 }
 
 .node-group {
-  
+cursor: pointer;
 }
 
 .node-circle,
 .node-rect {
-  cursor: pointer;
-  stroke: steelblue;
-  stroke-width: 1.5px;
+stroke: steelblue;
+stroke-width: 1.5px;
 }
 
 .node-label {
-  font: 10px sans-serif;
+font: 10px sans-serif;
 }
 
 .link {
-  fill: none;
-  stroke: #ccc;
-  stroke-width: 1.5px;
+fill: none;
+stroke: #ccc;
+stroke-width: 1.5px;
 }
 
+.link-highlight{
+stroke: rgb(255, 65, 54);
+}
 </style>
 
 <script src="https://d3js.org/d3.v4.min.js" type="application/javascript"></script>
@@ -361,7 +363,7 @@ function update(source) {
 	// ****************** links section ***************************
 
 	// Update the links...
-	var link = svg.selectAll('path.link')
+	var link = svg.selectAll('.link')
 		.data(links, function(d) { 
 			return d.id; 
 		});
@@ -369,6 +371,10 @@ function update(source) {
 	// Enter any new links at the parent's previous position.
 	var linkEnter = link.enter().insert('path', "g")
 		.attr("class", "link")
+		.attr("id", function(d) {
+			// E.g., HP_0000118-HP_0000152
+			return d.parent.data.id + "-" + d.data.id;
+		})
 		.attr('d', function(d){
 			var o = {x: source.x0, y: source.y0};
 			return diagonal(o, o);
@@ -433,12 +439,14 @@ function update(source) {
     // Show labels, starting with this node, then followed by each parent up to the root
     // but no label gets created for root since it's already there
 	function mouseover(node) {
+		// https://github.com/d3/d3-hierarchy#node_ancestors
+		// Returns the array of ancestors nodes, starting with this node, then followed by each parent up to the root
 		var nodes = node.ancestors();
 		// Remove the root node
-		var nodesToCreateLabels = nodes.slice(0, nodes.length - 1);
+		var targetNodes = nodes.slice(0, nodes.length - 1);
 
         svg.selectAll(".node-label")
-			.data(nodesToCreateLabels)
+			.data(targetNodes)
 			.enter()
 			.append('text')
 			.attr("x", function(d) {
@@ -457,15 +465,29 @@ function update(source) {
 			.text(function(d) { 
 				return (d.data.id !== "HP_") ? d.data.name + " [" + d.data.id + "]" : d.data.name; 
 			});
+
+		// Highlight the path
+		highlightPathToRoot(node, true);
 	}
 
     // Remove all labels of ancestors nodes except the root node
 	function mouseout(node) {
-	    var nodes = node.ancestors();
-	    // Remove the root node
-		var nodesToRemoveLabels = nodes.slice(0, nodes.length - 1);
-	    
+		// The root node label text has no class
+		// so no worries here just to remove all .node-label
 	    svg.selectAll(".node-label").remove();
+
+	    // Also dehighlight the path
+	    highlightPathToRoot(node, false);
+	}
+
+	function highlightPathToRoot(node, bool) {
+		var nodes = node.ancestors();
+		// Remove the root node
+		var targetNodes = nodes.slice(0, nodes.length - 1);
+
+		targetNodes.forEach(function(d) {
+            d3.select("#" + d.parent.data.id + "-" + d.data.id).classed("link-highlight", bool);
+		});
 	}
 
 }
