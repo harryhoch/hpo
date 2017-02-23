@@ -172,25 +172,34 @@ function buildDOITree(nodeData) {
     // Add new property _children to store grouping info
     nodeData._children = [];
     
-    // Only add the noMatch grouping if there's matches
-    if (nodeData.matchCount > 0) {
-        var noMatch = {};
-	    noMatch.id = "HP_";
-	    noMatch.name = "No Match Group";
-	    noMatch._children = [];
+    // Only add the noMatch grouping if there's matches and the count of matches is less than 
+    // the count of children, 
+    // and the node is not the actual matching node that contians no addition matches
+    if ((nodeData.matchCount > 0) && (nodeData.matchCount < nodeData.children.length)) {
+    	if ((nodeData.matchCount === 1) && nodeData.isMatch) {
+            nodeData._children = nodeData.children;
+            for (var j = 0; j < nodeData.children.length; j++) {
+		        buildDOITree(nodeData.children[j]);
+		    }
+    	} else {
+    		var noMatch = {};
+		    noMatch.id = "HP_";
+		    noMatch.name = "No Match Group";
+		    noMatch._children = [];
 
-        nodeData._children.push(noMatch);
+	        nodeData._children.push(noMatch);
 
-        for (var i = 0; i < nodeData.children.length; i++) {
-	        if (nodeData.children[i].matchCount > 0) {
-	            nodeData._children.push(nodeData.children[i]);
-	        } else {
-				// Add to noMatch group
-				nodeData._children[0]._children.push(nodeData.children[i]);
-	        }
+	        for (var i = 0; i < nodeData.children.length; i++) {
+		        if (nodeData.children[i].matchCount > 0) {
+		            nodeData._children.push(nodeData.children[i]);
+		        } else {
+					// Add to noMatch group
+					nodeData._children[0]._children.push(nodeData.children[i]);
+		        }
 
-	        buildDOITree(nodeData.children[i]);
-	    }
+		        buildDOITree(nodeData.children[i]);
+		    }
+    	}
     } else {
         nodeData._children = nodeData.children;
         for (var j = 0; j < nodeData.children.length; j++) {
