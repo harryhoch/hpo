@@ -154,7 +154,7 @@ console.log(rootDataWithMatch);
 d3.select(self.frameElement).style("height", "800px");
 
 // Recurisively copy _children to children 
-// so d3 tree can render it correctly
+// so d3.hierarchy can handle it correctly
 function rename(nodeData) {
 	nodeData.children = nodeData._children;
 
@@ -172,7 +172,7 @@ function buildDOITree(nodeData) {
     nodeData._children = [];
     
     // Only add the noMatch grouping if there's matches
-    //if (nodeData.matchCount > 0) {
+    if (nodeData.matchCount > 0) {
         var noMatch = {};
 	    noMatch.id = "HP_";
 	    noMatch.name = "No Match Group";
@@ -190,9 +190,12 @@ function buildDOITree(nodeData) {
 
 	        buildDOITree(nodeData.children[i]);
 	    }
-    // } else {
-    //     nodeData._children = nodeData.children;
-    // }
+    } else {
+        nodeData._children = nodeData.children;
+        for (var j = 0; j < nodeData.children.length; j++) {
+	        buildDOITree(nodeData.children[j]);
+	    }
+    }
 
     delete nodeData.children;
 }
