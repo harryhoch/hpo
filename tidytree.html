@@ -549,6 +549,9 @@ var treeRender = function(svgId, json, sourceArr) {
 				})
 				.attr("y", 3)
 				.attr("transform", function(d) {
+					// In many times, rotating the label text makes the label cropped by SVG boundry
+					// it can still create overlappings
+					//return "translate(" + d.y0 + "," + d.x0 + ") rotate(45)";
 					return "translate(" + d.y0 + "," + d.x0 + ")";
 				})
 				.attr("class", "node-label")
