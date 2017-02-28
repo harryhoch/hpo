@@ -156,6 +156,9 @@ var treeRender = function(svgId, json, sourceArr) {
 	var i = 0;
 	var duration = 750;
 
+    // The spacing between levels
+    var levelSpacing = 70;
+
 	var rootBgColor = "rgb(152, 121, 176)";
 	var isMatchBgColor = "rgb(100, 163, 72)";
 	var hasMatchBgColor = "rgb(223, 134, 59)";
@@ -316,14 +319,17 @@ var treeRender = function(svgId, json, sourceArr) {
 	console.log("tree data");
 	console.log(treeData);
 
-		// Compute the new tree layout.
+		// Compute the new tree layout
+		// https://github.com/d3/d3-hierarchy/blob/master/README.md#node_descendants
+		// Returns the array of descendant nodes, starting with this node, then followed by each child in topological order.
 		var nodes = treeData.descendants();
+		// Remove the root node for links
 		var links = treeData.descendants().slice(1);
 
-		// Normalize for fixed-depth.
-		// this multiplier factor is the width of the level.
+		// Sets up the spacing between levels
+		// this multiplier factor is the width of each level
 		nodes.forEach(function(d) { 
-			d.y = d.depth * 100;
+			d.y = d.depth * levelSpacing;
 		});
 
 		// ****************** Nodes section ***************************
