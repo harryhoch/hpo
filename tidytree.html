@@ -228,7 +228,7 @@ var treeRender = function(svgId, json, sourceArr) {
 	console.log(rootDataWithMatch);
 
 	    // Copy _children to children so d3 tree can render it correctly
-	    rename(rootDataWithMatch);
+	    renameChildrenProperty(rootDataWithMatch);
 
 	    // Assigns parent, children, height, data, depth, value
 	    rootNode = d3.hierarchy(rootDataWithMatch);
@@ -243,15 +243,14 @@ var treeRender = function(svgId, json, sourceArr) {
 	    update(rootNode);	
 	});
 
-	d3.select(self.frameElement).style("height", "800px");
 
 	// Recurisively copy _children to children 
 	// so d3.hierarchy can handle it correctly
-	function rename(nodeData) {
+	function renameChildrenProperty(nodeData) {
 		nodeData.children = nodeData._children;
 
 		for (var i = 0; i < nodeData._children.length; i++) {
-	        rename(nodeData._children[i]);
+	        renameChildrenProperty(nodeData._children[i]);
 	    }
 
 	    // Remove this _children property
