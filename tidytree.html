@@ -22,11 +22,17 @@ stroke-width: 1.5px;
 
 .node-label {
 font: 10px sans-serif;
+color: #f00;
+}
+
+
+.node-label text {
+color: #f00;
 }
 
 .link {
 fill: none;
-stroke: #ccc;
+stroke: #eee;
 stroke-width: 1.5px;
 }
 
@@ -164,9 +170,10 @@ var treeRender = function(svgId, json, sourceArr) {
 
 	// Declares a tree layout and assigns the size
 	var tree = d3.tree()
-	    // Don't use .nodeSize(), it causes some nodes go out of the svg boundry
-	    // and it requres to adjust each node x and y since the root is positioned at <0, 0>
-		.size([height, width]);
+				// Don't use .nodeSize(), it causes some nodes go out of the svg boundry
+				// and it requres to adjust each node
+				//x and y since the root is positioned at <0, 0>
+				.size([height, width]);
 
 	// Modify the provided root data by adding maching info
 	var calculateMatch = function(rootData, sourceArr) {
@@ -323,7 +330,7 @@ var treeRender = function(svgId, json, sourceArr) {
 		// Normalize for fixed-depth.
 		// this multiplier factor is the width of the level.
 		nodes.forEach(function(d) { 
-			d.y = d.depth * 100;
+			d.y = d.depth * 30;
 		});
 
 		// ****************** Nodes section ***************************
@@ -550,7 +557,8 @@ var treeRender = function(svgId, json, sourceArr) {
 					// Place label on left if node has children,
 					// otherwise on right of the node
 					return (d.children || d._children) ? "end" : "start";
-				})
+								    })
+				.attr("color","f00")
 				.text(function(d) { 
 					return (d.data.id !== "HP_") ? d.data.name + " [" + d.data.id + "]" : d.data.name; 
 				});
