@@ -26,7 +26,7 @@ font: 10px sans-serif;
 
 .link {
 fill: none;
-stroke: #ccc;
+stroke: #ddd;
 stroke-width: 1.5px;
 }
 
@@ -156,6 +156,9 @@ var treeRender = function(svgId, json, sourceArr) {
 	var i = 0;
 	var duration = 750;
 
+    // The spacing between levels
+    var levelSpacing = 70;
+
 	var rootBgColor = "rgb(152, 121, 176)";
 	var isMatchBgColor = "rgb(100, 163, 72)";
 	var hasMatchBgColor = "rgb(223, 134, 59)";
@@ -225,7 +228,7 @@ var treeRender = function(svgId, json, sourceArr) {
 	console.log(rootDataWithMatch);
 
 	    // Copy _children to children so d3 tree can render it correctly
-	    rename(rootDataWithMatch);
+	    renameChildrenProperty(rootDataWithMatch);
 
 	    // Assigns parent, children, height, data, depth, value
 	    rootNode = d3.hierarchy(rootDataWithMatch);
@@ -240,15 +243,14 @@ var treeRender = function(svgId, json, sourceArr) {
 	    update(rootNode);	
 	});
 
-	d3.select(self.frameElement).style("height", "800px");
 
 	// Recurisively copy _children to children 
 	// so d3.hierarchy can handle it correctly
-	function rename(nodeData) {
+	function renameChildrenProperty(nodeData) {
 		nodeData.children = nodeData._children;
 
 		for (var i = 0; i < nodeData._children.length; i++) {
-	        rename(nodeData._children[i]);
+	        renameChildrenProperty(nodeData._children[i]);
 	    }
 
 	    // Remove this _children property
@@ -316,14 +318,17 @@ var treeRender = function(svgId, json, sourceArr) {
 	console.log("tree data");
 	console.log(treeData);
 
-		// Compute the new tree layout.
+		// Compute the new tree layout
+		// https://github.com/d3/d3-hierarchy/blob/master/README.md#node_descendants
+		// Returns the array of descendant nodes, starting with this node, then followed by each child in topological order.
 		var nodes = treeData.descendants();
+		// Remove the root node for links
 		var links = treeData.descendants().slice(1);
 
-		// Normalize for fixed-depth.
-		// this multiplier factor is the width of the level.
+		// Sets up the spacing between levels
+		// this multiplier factor is the width of each level
 		nodes.forEach(function(d) { 
-			d.y = d.depth * 100;
+			d.y = d.depth * levelSpacing;
 		});
 
 		// ****************** Nodes section ***************************
@@ -348,14 +353,14 @@ var treeRender = function(svgId, json, sourceArr) {
 			.on('mouseover', mouseover)
 			.on('mouseout', mouseout);
 
-		// Add Circle for the real node
+		// Add circle for the real node
 		nodeEnter.filter((function(d) {
 	        	return (d.data.id !== "HP_");
 	        }))
 		    .append('circle')
 			.attr('class', 'node-circle');
 	    
-	    // Use a rect for the no match group
+	    // Use a rect for the no match group node
 	    nodeEnter.filter((function(d) {
 	        	return (d.data.id === "HP_");
 	        }))
@@ -406,6 +411,7 @@ var treeRender = function(svgId, json, sourceArr) {
 		    	}
 			});
 
+        // Update the no match group rect
 	    nodeUpdate.select('.node-rect')
 			.attr('x', -6) // -width/2 to center
 			.attr('y', -6) // -height/2 to center
@@ -543,6 +549,9 @@ var treeRender = function(svgId, json, sourceArr) {
 				})
 				.attr("y", 3)
 				.attr("transform", function(d) {
+					// In many times, rotating the label text makes the label cropped by SVG boundry
+					// it can still create overlappings
+					//return "translate(" + d.y0 + "," + d.x0 + ") rotate(45)";
 					return "translate(" + d.y0 + "," + d.x0 + ")";
 				})
 				.attr("class", "node-label")
@@ -552,7 +561,9 @@ var treeRender = function(svgId, json, sourceArr) {
 					return (d.children || d._children) ? "end" : "start";
 				})
 				.text(function(d) { 
-					return (d.data.id !== "HP_") ? d.data.name + " [" + d.data.id + "]" : d.data.name; 
+					// Show the HP ID of real node
+					// Show the size of no match group node
+					return (d.data.id !== "HP_") ? d.data.name + " [" + d.data.id + "]" : d.data.name + " (" + d.data.children.length + ")"; 
 				});
 
 			// Highlight the path
