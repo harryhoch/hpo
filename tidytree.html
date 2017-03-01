@@ -280,11 +280,12 @@ var treeRender = function(svgId, json, sourceArr) {
 	    // and the node is not the actual matching node that contians no addition matches
 	    if ((nodeData.matchCount > 0) && (nodeData.matchCount < nodeData.children.length)) {
 	    	if ((nodeData.matchCount === 1) && nodeData.isMatch) {
+			    // this  node matches
 	            nodeData._children = nodeData.children;
 	            for (var j = 0; j < nodeData.children.length; j++) {
 			        buildDOITree(nodeData.children[j]);
 			    }
-	    	} else {
+	    	} else { // doesn't match
 	    		var noMatch = {};
 			    noMatch.id = "HP_";
 			    noMatch.name = "No Matches";
@@ -302,13 +303,13 @@ var treeRender = function(svgId, json, sourceArr) {
 
 			        buildDOITree(nodeData.children[i]);
 			    }
-	    	}
-	    } else {
-	        nodeData._children = nodeData.children;
-	        for (var j = 0; j < nodeData.children.length; j++) {
-		        buildDOITree(nodeData.children[j]);
+	    		}
+		} else { // no match or number of matches > # of children
+			nodeData._children = nodeData.children;
+			for (var j = 0; j < nodeData.children.length; j++) {
+					    buildDOITree(nodeData.children[j]);
 		    }
-	    }
+	        }				    
 
 	    delete nodeData.children;
 	}
@@ -593,7 +594,9 @@ var treeRender = function(svgId, json, sourceArr) {
 			//	    ?d.data.name + " [" + d.data.id + "]"
 			//		    :.data.name + " (" +
 			//	d.data.children.length + ")"; 
-				    return d.data.name + " (" + d.data.children.length + ")"; 
+				    return d.data.name + " (" +
+					d.data.matchCount + ")";
+					// was d.data.children.length
 								    })
 			        .classed("nodelabel",true);
 
