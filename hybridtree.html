@@ -15,7 +15,7 @@ cursor: pointer;
 }
 
 .node-circle,
-.node-ellipse,
+.node-hybrid,
 .node-rect {
 stroke: steelblue;
 stroke-width: 1.5px;
@@ -607,6 +607,14 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 	    .attr("transform", "translate("+ margin.left + "," + margin.top + ")");
 
 
+    var fader = function(color) { 
+	    return d3.interpolateRgb(color, "#fff")(0.2); 
+	};
+
+    // This one only generates 10 categorical colors, enough for top 10 models
+    // https://github.com/d3/d3-scale#schemeCategory10
+    var color = d3.scaleOrdinal(d3.schemeCategory10.map(fader));
+
 	// Make rootNode a global variable
 	var rootNode;
 	var i = 0;
@@ -835,43 +843,14 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 			.on('mouseover', mouseover)
 			.on('mouseout', mouseout);
 
-		// Add  ellipse for the hybrid node
+        // Add circle for the root node
 		nodeEnter.filter((function(d) {
-	        	return (d.data.id !== "HP_");
+	        	return (d.parent === null);
 	        }))
-		    .append('ellipse')
-			.attr('class', 'node-ellipse');
-
-        // Needs more work
-		nodeEnter.selectAll(".match-model")
-			// Can't just use .data(d3.entries(d.data.matchCount))
-			.data(function(d) {
-				// https://github.com/d3/d3-collection/blob/master/README.md#entries
-				// d3.entries() returns an array containing the property keys and values 
-				// of the specified object (an associative array)
-				var matchCountArr = d3.entries(d.data.matchCount);
-				// Only return model that has matches
-				return matchCountArr.filter(function(item) {
-					return item.value > 0
-				});
-			})
-			.enter().append("text")
-			.attr("x", 2)
-			.attr("y", 2)
-			.attr("class", "match-model-text")
-			.style("fill", "#222")
-			.text(function(d) { 
-				return (d.value > 0) ? d.key : ''; 
-			});
-	    
-	    // Use a rect for the no match group node
-	    nodeEnter.filter((function(d) {
-	        	return (d.data.id === "HP_");
-	        }))
-			.append('rect')
-			.attr("class", "node-rect");
-
-	    // Filter out the root node and create its label on left
+		    .append('circle')
+			.attr('class', 'node-circle');
+        
+        // Create root node label on left
 	    nodeEnter.filter((function(d) {
 	        	// Find the root node
 	        	return (d.parent == null);
@@ -884,6 +863,59 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 				return d.data.name; 
 			});
 
+        // Use circle for the nodes have no match
+		nodeEnter.filter((function(d) {
+	        	return (d.parent !== null && d.data.id !== "HP_" && d.data.totalMatchCount === 0);
+	        }))
+		    .append('circle')
+			.attr('class', 'node-circle');
+
+		// Use ellipse for the hybrid node
+		nodeEnter.filter((function(d) {
+	        	return (d.parent !== null && d.data.id !== "HP_" && d.data.totalMatchCount > 0);
+	        }))
+		    .append('rect')
+			.attr('class', 'node-hybrid');
+
+        // Append mouse models after ellipse for the hybrid node
+		nodeEnter.filter((function(d) {
+	        	return (d.parent !== null && d.data.id !== "HP_" && d.data.totalMatchCount > 0);
+	        }))
+		    .selectAll(".match-model")
+			// Can't just use .data(d3.entries(d.data.matchCount))
+			.data(function(d) {
+				// https://github.com/d3/d3-collection/blob/master/README.md#entries
+				// d3.entries() returns an array containing the property keys and values 
+				// of the specified object (an associative array)
+				var matchCountArr = d3.entries(d.data.matchCount);
+				// Only return model that has matches
+				return matchCountArr.filter(function(item) {
+					return item.value > 0
+				});
+			})
+			.enter().append("rect")
+			.attr("x", function(d, i) {
+				return 6 * i - 9;
+			})
+			.attr("y", -5)
+			.attr("width", 4)
+			.attr("height", 8)
+			.attr("class", "match-model")
+			.style("fill", function(d) {
+                // Use different colors for each model
+                return color(d.key);
+			})
+			.text(function(d) { 
+				return (d.value > 0) ? d.key : ''; 
+			});
+	    
+	    // Use a rect for the no match group node
+	    nodeEnter.filter((function(d) {
+	        	return (d.data.id === "HP_");
+	        }))
+			.append('rect')
+			.attr("class", "node-rect");
+
 		// Merge the enter and update selections after a data-join
 		var nodeUpdate = nodeEnter.merge(node);
 
@@ -894,22 +926,31 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 				return "translate(" + d.y + "," + d.x + ")";
 			});
 
-		// Update the node attributes and style
-		nodeUpdate.select('.node-ellipse')
-			.attr('rx', 20)
-			.attr('ry', 12)
+        // Update the node attributes and style
+		nodeUpdate.select('.node-circle')
+			.attr('r', 6)
 			.style("fill", function(d) {
 				if (d.parent === null) {
 	                // Give root its own bg color
 	                return rootBgColor;
 		    	} else {
-		    	    // Not handling actual matching node here
-		    	    if (d.data.totalMatchCount > 0) {
-                        return hasMatchBgColor;
-					} else {
-						return d._children ? hasNoMatchRegularBgColor : hasNoMatchLeafBgColor;
-					}
+		    	    return d._children ? hasNoMatchRegularBgColor : hasNoMatchLeafBgColor;
 		    	}
+			});
+
+		// Update the node attributes and style
+		nodeUpdate.select('.node-hybrid')
+			.attr('x', -11)
+			.attr('y', -7)
+			.attr('width', 20)
+			.attr('height', 12)
+			.style("fill", function(d) {
+				// Not handling actual matching node here
+	    	    if (d.data.totalMatchCount > 0) {
+                    return "#fff";
+				} else {
+					return d._children ? hasNoMatchRegularBgColor : hasNoMatchLeafBgColor;
+				}
 			});
 
 
