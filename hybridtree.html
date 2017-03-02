@@ -23,6 +23,7 @@ stroke-width: 1.5px;
 
 .node-label {
 font: 10px sans-serif;
+fill: #666;
 }
 
 .link {
@@ -624,8 +625,8 @@ var renderMPTree = function(svgId, json, hydridMatches) {
     var levelSpacing = 70;
 
 	var rootBgColor = "rgb(152, 121, 176)";
-	var isMatchBgColor = "rgb(100, 163, 72)";
-	var hasMatchBgColor = "rgb(223, 134, 59)";
+	var isMatchBorderColor = "#f85f0d";
+	var hasMatchBorderColor = "#ccc";
 	var hasNoMatchRegularBgColor = "rgb(176, 196, 222)";
 	var hasNoMatchLeafBgColor = "rgb(255, 255, 255)";
 
@@ -910,11 +911,11 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 			})
 			.enter().append("rect")
 			.attr("x", function(d, i) {
-				return 6 * i - 9;
+				return 6 * i - 10;
 			})
-			.attr("y", -5)
-			.attr("width", 4)
-			.attr("height", 8)
+			.attr("y", -6)
+			.attr("width", 6)
+			.attr("height", 10)
 			.attr("class", "match-model")
 			.style("fill", function(d) {
                 // Use different colors for each model
@@ -959,7 +960,8 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 			.attr('y', -7)
 			.attr('width', 20)
 			.attr('height', 12)
-			.style("fill", function(d) {
+			.style("fill", "#fff")
+			.style("stroke", function(d) {
 				// Get an array containing the property keys and values
 				var isMatchArr = d3.entries(d.data.isMatch);
 
@@ -968,7 +970,7 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 					return item.value;
 				});
 
-                return (filteredIsMatchArr.length > 0) ? isMatchBgColor : "#fff";
+                return (filteredIsMatchArr.length > 0) ? isMatchBorderColor : hasMatchBorderColor;
 			});
 
 
