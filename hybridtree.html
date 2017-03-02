@@ -21,9 +21,17 @@ stroke: steelblue;
 stroke-width: 1.5px;
 }
 
-.node-label {
-font: 10px sans-serif;
+
+
+.nodelabel {
+fill: #cccccc;
 }
+
+
+.rootnodelabel {
+fill: #cccccc;
+}
+
 
 .link {
 fill: none;
@@ -135,7 +143,7 @@ var renderHPTree = function(svgId, json, sourceArr) {
     // Set the dimensions and margins of the diagram
 	var margin = {top: 20, right: 90, bottom: 30, left: 200};
 	var width = 1060 - margin.left - margin.right;
-	var height = 400 - margin.top - margin.bottom;
+	var height = 200 - margin.top - margin.bottom;
 
 	// append the svg object to the body of the page
 	// appends a 'group' element to 'svg'
@@ -374,7 +382,8 @@ var renderHPTree = function(svgId, json, sourceArr) {
 			.attr("text-anchor", "end")
 			.text(function(d) { 
 				return d.data.name; 
-			});
+				    })
+   		        .classed("rootnodelabel",true);;
 
 		// Merge the enter and update selections after a data-join
 		var nodeUpdate = nodeEnter.merge(node);
@@ -536,7 +545,7 @@ var renderHPTree = function(svgId, json, sourceArr) {
 			// Remove the root node
 			var targetNodes = nodes.slice(0, nodes.length - 1);
 
-	        svg.selectAll(".node-label")
+	        svg.selectAll(".nodelabel")
 				.data(targetNodes)
 				.enter()
 				.append('text')
@@ -550,7 +559,6 @@ var renderHPTree = function(svgId, json, sourceArr) {
 					//return "translate(" + d.y0 + "," + d.x0 + ") rotate(45)";
 					return "translate(" + d.y0 + "," + d.x0 + ")";
 				})
-				.attr("class", "node-label")
 				.attr("text-anchor", function(d) {
 					// Place label on left if node has children,
 					// otherwise on right of the node
@@ -558,9 +566,11 @@ var renderHPTree = function(svgId, json, sourceArr) {
 				})
 				.text(function(d) { 
 					// Show the HP ID of real node
-					// Show the size of no match group node
-					return (d.data.id !== "HP_") ? d.data.name + " [" + d.data.id + "]" : d.data.name + " (" + d.data.children.length + ")"; 
-				});
+					// Show the size of no match   group node
+				    return (d.data.id !== "HP_") ? d.data.name + " (" + d.data.matchCount + ")" : d.data.name + " (" + d.data.children.length + ")";
+
+				    })
+    			        .classed("nodelabel",true);;
 
 			// Highlight the path
 			highlightPathToRoot(node, true);

@@ -344,7 +344,6 @@ var treeRender = function(svgId, json, sourceArr) {
 		// this multiplier factor is the width of each level
 		nodes.forEach(function(d) { 
 			d.y = d.depth * levelSpacing;
-			d.y = d.depth * 50;
 		});
 
 		// ****************** Nodes section ***************************
@@ -614,7 +613,7 @@ var treeRender = function(svgId, json, sourceArr) {
 		    highlightPathToRoot(node, false);
 		}
 
-		function highlightPathToRoot(node, bool) {
+		function highlightPathTo`Root(node, bool) {
 			var nodes = node.ancestors();
 			// Remove the root node
 			var targetNodes = nodes.slice(0, nodes.length - 1);
