@@ -22,7 +22,6 @@ stroke-width: 1.5px;
 }
 
 
-
 .nodelabel {
 fill: #cccccc;
 }
@@ -72,8 +71,19 @@ var patientPhenotypes = [
     "HP_0000244",
     "HP_0000272",
     "HP_0000303",
-    "HP_0000316"
+"HP_0000316",
+"HP_0002067",
+"HP_0000641",
+"HP_0002174",
+"HP_0000657",
+"HP_0000602",
+"HP_0002015"
 ];
+
+var levelSpacing = 50;
+var treeWidth = 1060;
+var treeHeight = 200;
+var margin = {top: 20, right: 90, bottom: 30, left: 100};
 
 var simSearch = function(sourceArr, targetGroupId) {
 	var serverUrl = 'https://monarchinitiative.org/simsearch/phenotype/'; // must add '/'
@@ -141,9 +151,8 @@ var simSearch = function(sourceArr, targetGroupId) {
 
 var renderHPTree = function(svgId, json, sourceArr) {
     // Set the dimensions and margins of the diagram
-	var margin = {top: 20, right: 90, bottom: 30, left: 200};
-	var width = 1060 - margin.left - margin.right;
-	var height = 200 - margin.top - margin.bottom;
+	var width = treeWidth - margin.left - margin.right;
+	var height = treeHeight - margin.top - margin.bottom;
 
 	// append the svg object to the body of the page
 	// appends a 'group' element to 'svg'
@@ -161,7 +170,6 @@ var renderHPTree = function(svgId, json, sourceArr) {
 	var duration = 750;
 
     // The spacing between levels
-    var levelSpacing = 70;
 
 	var rootBgColor = "rgb(152, 121, 176)";
 	var isMatchBgColor = "rgb(100, 163, 72)";
@@ -382,8 +390,8 @@ var renderHPTree = function(svgId, json, sourceArr) {
 			.attr("text-anchor", "end")
 			.text(function(d) { 
 				return d.data.name; 
-				    })
-   		        .classed("rootnodelabel",true);;
+		         })
+			.classed("rootnodelabel",true);
 
 		// Merge the enter and update selections after a data-join
 		var nodeUpdate = nodeEnter.merge(node);
@@ -566,6 +574,7 @@ var renderHPTree = function(svgId, json, sourceArr) {
 				})
 				.text(function(d) { 
 					// Show the HP ID of real node
+
 					// Show the size of no match   group node
 				    return (d.data.id !== "HP_") ? d.data.name + " (" + d.data.matchCount + ")" : d.data.name + " (" + d.data.children.length + ")";
 
@@ -580,7 +589,7 @@ var renderHPTree = function(svgId, json, sourceArr) {
 		function mouseout(node) {
 			// The root node label text has no class
 			// so no worries here just to remove all .node-label
-		    svg.selectAll(".node-label").remove();
+		    svg.selectAll(".nodelabel").remove();
 
 		    // Also dehighlight the path
 		    highlightPathToRoot(node, false);
@@ -603,9 +612,9 @@ var renderHPTree = function(svgId, json, sourceArr) {
 // MP Hydrid Tree
 var renderMPTree = function(svgId, json, hydridMatches) {
     // Set the dimensions and margins of the diagram
-	var margin = {top: 20, right: 90, bottom: 30, left: 200};
-	var width = 1060 - margin.left - margin.right;
-	var height = 400 - margin.top - margin.bottom;
+
+	var width = treeWidth - margin.left - margin.right;
+	var height = treeHeight - margin.top - margin.bottom;
 
 	// append the svg object to the body of the page
 	// appends a 'group' element to 'svg'
@@ -631,7 +640,6 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 	var duration = 750;
 
     // The spacing between levels
-    var levelSpacing = 70;
 
 	var rootBgColor = "rgb(152, 121, 176)";
 	var isMatchBgColor = "rgb(100, 163, 72)";
