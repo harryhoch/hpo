@@ -133,7 +133,7 @@ var simSearch = function(sourceArr, targetGroupId) {
             $('#mpSvg' + modelNumber + 'ModelName').text(top3Models[j].label);
 
             // Render treemap with matches for each model
-            treeRender('#mpSvg' + modelNumber, 'mp/mp_treemap.json', matches);
+            treeRender('mpSvg' + modelNumber, 'mp/mp_treemap.json', matches);
         }
     });
     
@@ -151,7 +151,7 @@ var treeRender = function(svgId, json, sourceArr) {
 	// append the svg object to the body of the page
 	// appends a 'group' element to 'svg'
 	// moves the 'group' element to the top left margin
-	var svg = d3.select(svgId)
+	var svg = d3.select("#" + svgId)
 	    .attr("width", width + margin.right + margin.left)
 	    .attr("height", height + margin.top + margin.bottom)
 	    .append("g")
@@ -360,7 +360,7 @@ var treeRender = function(svgId, json, sourceArr) {
 		var nodeEnter = node.enter().append('g')
 			.attr('class', 'node-group')
 			.attr("id", function(d) {
-				return d.data.id;
+				return svgId + "_" + d.data.id;
 			})
 			.attr("transform", function(d) {
 				    console.log("translating to x is "+source.x0);
@@ -491,8 +491,8 @@ var treeRender = function(svgId, json, sourceArr) {
 		var linkEnter = link.enter().insert('path', "g")
 			.attr("class", "link")
 			.attr("id", function(d) {
-				// E.g., HP_0000118-HP_0000152
-				return d.parent.data.id + "-" + d.data.id;
+				// E.g., hpSvg_HP_0000118-HP_0000152
+				return svgId + "_" + d.parent.data.id + "-" + d.data.id;
 			})
 			.attr('d', function(d){
 				var o = {x: source.x0, y: source.y0};
@@ -620,7 +620,7 @@ var treeRender = function(svgId, json, sourceArr) {
 			var targetNodes = nodes.slice(0, nodes.length - 1);
 
 			targetNodes.forEach(function(d) {
-	            d3.select("#" + d.parent.data.id + "-" + d.data.id).classed("link-highlight", bool);
+	            d3.select("#" + svgId + "_" + d.parent.data.id + "-" + d.data.id).classed("link-highlight", bool);
 			});
 		}
 
@@ -632,7 +632,7 @@ var treeRender = function(svgId, json, sourceArr) {
 
 simSearch(patientPhenotypes, '10090');
 
-treeRender('#hpSvg', 'hp/hp_treemap.json', patientPhenotypes);
+treeRender('hpSvg', 'hp/hp_treemap.json', patientPhenotypes);
 
 
 
