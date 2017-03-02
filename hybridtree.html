@@ -763,23 +763,38 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 	    // the count of children, 
 	    // and the node is not the actual matching node that contians no additional matches
 	    if ((nodeData.totalMatchCount > 0) && (nodeData.totalMatchCount < nodeData.children.length)) {
-	    	var noMatch = {};
-		    noMatch.id = "HP_";
-		    noMatch.name = "No Match Group";
-		    noMatch._children = [];
+	    	// Get an array containing the property keys and values
+			var isMatchArr = d3.entries(nodeData.isMatch);
 
-	        nodeData._children.push(noMatch);
+            // This filtered array only contains key-value pairs that are the actual matches
+			var filteredIsMatchArr = isMatchArr.filter(function(item) {
+				return item.value;
+			});
 
-	        for (var i = 0; i < nodeData.children.length; i++) {
-		        if (nodeData.children[i].totalMatchCount > 0) {
-		            nodeData._children.push(nodeData.children[i]);
-		        } else {
-					// Add to noMatch group
-					nodeData._children[0]._children.push(nodeData.children[i]);
-		        }
+	    	if (filteredIsMatchArr.length > 0) {
+                nodeData._children = nodeData.children;
+	            for (var j = 0; j < nodeData.children.length; j++) {
+			        buildHybridDOITree(nodeData.children[j]);
+			    }
+	    	} else {
+                var noMatch = {};
+			    noMatch.id = "HP_";
+			    noMatch.name = "No Match Group";
+			    noMatch._children = [];
 
-		        buildHybridDOITree(nodeData.children[i]);
-		    }
+		        nodeData._children.push(noMatch);
+
+		        for (var i = 0; i < nodeData.children.length; i++) {
+			        if (nodeData.children[i].totalMatchCount > 0) {
+			            nodeData._children.push(nodeData.children[i]);
+			        } else {
+						// Add to noMatch group
+						nodeData._children[0]._children.push(nodeData.children[i]);
+			        }
+
+			        buildHybridDOITree(nodeData.children[i]);
+			    }
+	    	}
 	    } else {
 	        nodeData._children = nodeData.children;
 	        for (var j = 0; j < nodeData.children.length; j++) {
