@@ -135,7 +135,7 @@ var renderHPTree = function(svgId, json, sourceArr) {
     // Set the dimensions and margins of the diagram
 	var margin = {top: 20, right: 90, bottom: 30, left: 200};
 	var width = 1060 - margin.left - margin.right;
-	var height = 300 - margin.top - margin.bottom;
+	var height = 400 - margin.top - margin.bottom;
 
 	// append the svg object to the body of the page
 	// appends a 'group' element to 'svg'
@@ -595,7 +595,7 @@ var renderMPTree = function(svgId, json, hydridMatches) {
     // Set the dimensions and margins of the diagram
 	var margin = {top: 20, right: 90, bottom: 30, left: 200};
 	var width = 1060 - margin.left - margin.right;
-	var height = 300 - margin.top - margin.bottom;
+	var height = 400 - margin.top - margin.bottom;
 
 	// append the svg object to the body of the page
 	// appends a 'group' element to 'svg'
@@ -890,7 +890,7 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 				var matchCountArr = d3.entries(d.data.matchCount);
 				// Only return model that has matches
 				return matchCountArr.filter(function(item) {
-					return item.value > 0
+					return item.value > 0;
 				});
 			})
 			.enter().append("rect")
@@ -945,12 +945,15 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 			.attr('width', 20)
 			.attr('height', 12)
 			.style("fill", function(d) {
-				// Not handling actual matching node here
-	    	    if (d.data.totalMatchCount > 0) {
-                    return "#fff";
-				} else {
-					return d._children ? hasNoMatchRegularBgColor : hasNoMatchLeafBgColor;
-				}
+				// Get an array containing the property keys and values
+				var isMatchArr = d3.entries(d.data.isMatch);
+
+                // This filtered array only contains key-value pairs that are the actual matches
+				var filteredIsMatchArr = isMatchArr.filter(function(item) {
+					return item.value;
+				});
+
+                return (filteredIsMatchArr.length > 0) ? isMatchBgColor : "#fff";
 			});
 
 
@@ -961,21 +964,8 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 			.attr('width', 12)
 			.attr('height', 12)
 			.style("fill", function(d) {
-				if (d.parent === null) {
-	                // Give root its own bg color
-	                return rootBgColor;
-		    	} else {
-		    	    // Here we only have 3 colors: isMatchBgColor, hasMatchBgColor, hasNoMatchRegularBgColor, and hasNoMatchLeafBgColor
-			    	if (d.data.isMatch) {
-		                return isMatchBgColor;
-					} else {
-						if (d.data.matchCount > 0) {
-	                        return hasMatchBgColor;
-						} else {
-							return d._children ? hasNoMatchRegularBgColor : hasNoMatchLeafBgColor;
-						}
-					}
-		    	}
+				// Either leaf node or not. No match stuff here
+				return d._children ? hasNoMatchRegularBgColor : hasNoMatchLeafBgColor;	
 			});
 
 		// Remove any exiting nodes
