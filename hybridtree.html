@@ -49,7 +49,7 @@ stroke: rgb(255, 65, 54);
 </div>
 
 <div class="matchingTree">
-<h3>MP Hydrid Tree</h3>
+<h3>MP Hybrid Tree</h3>
 <svg id= "mpSvg"></svg>
 </div>
 
@@ -562,7 +562,7 @@ var simSearch = function(sourceArr, targetGroupId) {
 		console.log("Top 3 models");
 		console.log(top3Models);
 
-        var hydridMatches = {};
+        var hybridMatches = {};
 
         for (var j = 0; j < 3; j++) {
             var matches = [];
@@ -577,15 +577,15 @@ var simSearch = function(sourceArr, targetGroupId) {
             console.log("Matches array of model " + modelNumber);
             console.log(matches);
 
-            // Add to hydridMatches
-            hydridMatches[top3Models[j].label] = matches;
+            // Add to hybridMatches
+            hybridMatches[top3Models[j].label] = matches;
         }
 
-        console.log("hydridMatches....");
-        console.log(hydridMatches);
+        console.log("hybridMatches....");
+        console.log(hybridMatches);
 
-        // Render MP hydrid tree with matches for each model
-        renderMPTree('mpSvg', 'mp/mp_treemap.json', hydridMatches);
+        // Render MP hybrid tree with matches for each model
+        renderMPTree('mpSvg', 'mp/mp_treemap.json', hybridMatches);
     });
     
     jqxhr.fail(function () { 
@@ -593,8 +593,8 @@ var simSearch = function(sourceArr, targetGroupId) {
     });
 };
 
-// MP Hydrid Tree
-var renderMPTree = function(svgId, json, hydridMatches) {
+// MP Hybrid Tree
+var renderMPTree = function(svgId, json, hybridMatches) {
     // Set the dimensions and margins of the diagram
 	var margin = {top: 20, right: 90, bottom: 30, left: 200};
 	var width = 1060 - margin.left - margin.right;
@@ -643,9 +643,9 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 		.size([height, width]);
 
 	// Modify the provided root data by adding maching info
-	var calculateHybridMatch = function(rootData, hydridMatches) {
-	    for (var key in hydridMatches) {
-            var sourceArr = hydridMatches[key];
+	var calculateHybridMatch = function(rootData, hybridMatches) {
+	    for (var key in hybridMatches) {
+            var sourceArr = hybridMatches[key];
 
             // This is used for calculating the matches
 		    // the number of matches will be stored in d.value
@@ -724,10 +724,10 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 	    if (error) throw error;
         
         // Create legend
-        createLegend(hydridMatches);
+        createLegend(hybridMatches);
 
 	    // Add calculated matches to the rootData
-	    var rootDataWithHybridMatch = calculateHybridMatch(rootData, hydridMatches);
+	    var rootDataWithHybridMatch = calculateHybridMatch(rootData, hybridMatches);
 
 	    buildHybridDOITree(rootDataWithHybridMatch);
 
@@ -751,11 +751,11 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 	});
 
     // Create legend from mpdel labels/keys
-    var createLegend = function(hydridMatches) {
+    var createLegend = function(hybridMatches) {
     	// First construct legend data from keys
     	var legendData = {};
 
-    	for (var key in hydridMatches) {
+    	for (var key in hybridMatches) {
             legendData[key] = color(key);
     	}
 
