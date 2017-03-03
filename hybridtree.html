@@ -607,14 +607,18 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 	    .append("g")
 	    .attr("transform", "translate("+ margin.left + "," + margin.top + ")");
 
+    var colorDomain = [0, 0.25, 0.5, 0.75, 1];
+    // Each color sets the stop color based on the stop points in colorDomain
+    var colorRange = [ 
+        'rgb(31, 119, 180)',
+        'rgb(44, 160, 44)',
+        'rgb(148, 103, 189)', 
+        'rgb(51, 102, 204)'
+    ];
 
-    var fader = function(color) { 
-	    return d3.interpolateRgb(color, "#fff")(0.2); 
-	};
-
-    // This one only generates 10 categorical colors, enough for top 10 models
-    // https://github.com/d3/d3-scale#schemeCategory10
-    var color = d3.scaleOrdinal(d3.schemeCategory10.map(fader));
+    var color = d3.scaleOrdinal()
+        .domain(colorDomain)
+        .range(colorRange);
 
 	// Make rootNode a global variable
 	var rootNode;
@@ -625,8 +629,8 @@ var renderMPTree = function(svgId, json, hydridMatches) {
     var levelSpacing = 70;
 
 	var rootBgColor = "rgb(152, 121, 176)";
-	var isMatchBorderColor = "#f85f0d";
-	var hasMatchBorderColor = "#ccc";
+	var isMatchBorderColor = "rgb(255, 127, 14)";
+	var hasMatchBorderColor = "rgb(217, 217, 217)";
 	var hasNoMatchRegularBgColor = "rgb(176, 196, 222)";
 	var hasNoMatchLeafBgColor = "rgb(255, 255, 255)";
 
@@ -971,6 +975,17 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 				});
 
                 return (filteredIsMatchArr.length > 0) ? isMatchBorderColor : hasMatchBorderColor;
+			})
+			.style("stroke-width", function(d) {
+				// Get an array containing the property keys and values
+				var isMatchArr = d3.entries(d.data.isMatch);
+
+                // This filtered array only contains key-value pairs that are the actual matches
+				var filteredIsMatchArr = isMatchArr.filter(function(item) {
+					return item.value;
+				});
+
+                return (filteredIsMatchArr.length > 0) ? 3 : 1.5;
 			});
 
 
