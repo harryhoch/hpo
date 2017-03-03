@@ -756,10 +756,23 @@ var renderMPTree = function(svgId, json, hybridMatches) {
     	var legendData = {};
 
     	for (var key in hybridMatches) {
-            legendData[key] = color(key);
-    	}
+            var legend = {};
+            legend.color = color(key);
+            legend.matchCount = hybridMatches[key].length;
 
-console.log("Legend data ...");
+            legendData[key] = legend;
+    	}
+        
+        // First convert the object to array
+        var legendDataArr = d3.entries(legendData);
+
+        // Sort the legend data based on matchCount
+        legendDataArr.sort(function(a, b) {
+        	return d3.descending(a.value.matchCount, b.value.matchCount);
+        });
+
+
+console.log("Sorted legend data ...");
 console.log(d3.entries(legendData));
 
         var legendRectSize = 10;
@@ -767,7 +780,7 @@ console.log(d3.entries(legendData));
 
         // Legend group
         var legend = svg.selectAll('.legend')
-			.data(d3.entries(legendData))
+			.data(legendDataArr)
 			.enter()
 			.append('g')
 			.attr('class', 'legend')
@@ -784,7 +797,7 @@ console.log(d3.entries(legendData));
 			.attr('width', legendRectSize)
 			.attr('height', legendRectSize)
 			.style('fill', function(d) {
-				return d.value;
+				return d.value.color;
 			});
 
         // Legend label text
@@ -794,7 +807,7 @@ console.log(d3.entries(legendData));
 				return i * (legendRectSize + legendSpacing) + 8;
 			})
 			.text(function(d) { 
-				return d.key; 
+				return d.key + " (" + d.value.matchCount + ")"; 
 			});
     };
 
