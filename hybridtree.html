@@ -974,10 +974,20 @@ console.log(d3.entries(legendData));
 				// d3.entries() returns an array containing the property keys and values 
 				// of the specified object (an associative array)
 				var matchCountArr = d3.entries(d.data.matchCount);
-				// Only return model that has matches
-				return matchCountArr.filter(function(item) {
+
+				// Only show model that has matches
+				matchCountArr = matchCountArr.filter(function(item) {
 					return item.value > 0;
 				});
+
+				console.log("matchCountArr");
+				console.log(matchCountArr);
+
+				// Sort the data based on match count
+				// if each has only 1 match, no sort applied
+                return matchCountArr.sort(function(a, b) {
+                    return d3.descending(a.value, b.value);
+                });
 			})
 			.enter().append("rect")
 			.attr("x", function(d, i) {
