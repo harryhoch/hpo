@@ -68,69 +68,6 @@ var patientPhenotypes = [
     "HP_0000316"
 ];
 
-var simSearch = function(sourceArr, targetGroupId) {
-	var serverUrl = 'https://monarchinitiative.org/simsearch/phenotype/'; // must add '/'
-	var inputItemsString = 'input_items='; // HTTP POST, body parameter
-	var targetSpeciesString = '&target_species='; // HTTP POST, body parameter
-
-
-	var postData = inputItemsString + sourceArr.join("+") + targetSpeciesString + targetGroupId;
-
-	// Separate the ajax request with callbacks
-    var jqxhr = $.ajax({
-        url: serverUrl,
-        method: 'POST', 
-        data: postData,
-        async : true,
-        timeout: 60000,
-        dataType : 'json'
-    });
-    
-    jqxhr.done(function(data) {
-        console.log("simsearch results...");
-        console.log(data);  
-        
-        var top3Models = [];
-        // Find the top 3 ranked models from simsearch result
-        // and render each model as a treemap with highlighted matches
-        for (var i = 0; i < 3; i++) {
-            // Find the top 3 ranked models from simsearch result
-            top3Models.push(data.b[i]);
-        }
-
-		console.log("Top 3 models");
-		console.log(top3Models);
-
-        var hydridMatches = {};
-
-        for (var j = 0; j < 3; j++) {
-            var matches = [];
-            for (var k = 0; k < top3Models[j].matches.length; k++) {
-				// Convert MP:1234567 to MP_1234567
-            	var id = top3Models[j].matches[k].b.id.replace(':', '_');
-            	matches.push(id)
-            }
-            
-            var modelNumber = j + 1;
-
-            console.log("Matches array of model " + modelNumber);
-            console.log(matches);
-
-            // Add to hydridMatches
-            hydridMatches[top3Models[j].label] = matches;
-        }
-
-        console.log("hydridMatches....");
-        console.log(hydridMatches);
-
-        // Render MP hydrid tree with matches for each model
-        renderMPTree('mpSvg', 'mp/mp_treemap.json', hydridMatches);
-    });
-    
-    jqxhr.fail(function () { 
-        console.log('Ajax error')
-    });
-};
 
 var renderHPTree = function(svgId, json, sourceArr) {
     // Set the dimensions and margins of the diagram
@@ -591,6 +528,71 @@ var renderHPTree = function(svgId, json, sourceArr) {
 
 }
 
+
+var simSearch = function(sourceArr, targetGroupId) {
+	var serverUrl = 'https://monarchinitiative.org/simsearch/phenotype/'; // must add '/'
+	var inputItemsString = 'input_items='; // HTTP POST, body parameter
+	var targetSpeciesString = '&target_species='; // HTTP POST, body parameter
+
+
+	var postData = inputItemsString + sourceArr.join("+") + targetSpeciesString + targetGroupId;
+
+	// Separate the ajax request with callbacks
+    var jqxhr = $.ajax({
+        url: serverUrl,
+        method: 'POST', 
+        data: postData,
+        async : true,
+        timeout: 60000,
+        dataType : 'json'
+    });
+    
+    jqxhr.done(function(data) {
+        console.log("simsearch results...");
+        console.log(data);  
+        
+        var top3Models = [];
+        // Find the top 3 ranked models from simsearch result
+        // and render each model as a treemap with highlighted matches
+        for (var i = 0; i < 3; i++) {
+            // Find the top 3 ranked models from simsearch result
+            top3Models.push(data.b[i]);
+        }
+
+		console.log("Top 3 models");
+		console.log(top3Models);
+
+        var hydridMatches = {};
+
+        for (var j = 0; j < 3; j++) {
+            var matches = [];
+            for (var k = 0; k < top3Models[j].matches.length; k++) {
+				// Convert MP:1234567 to MP_1234567
+            	var id = top3Models[j].matches[k].b.id.replace(':', '_');
+            	matches.push(id)
+            }
+            
+            var modelNumber = j + 1;
+
+            console.log("Matches array of model " + modelNumber);
+            console.log(matches);
+
+            // Add to hydridMatches
+            hydridMatches[top3Models[j].label] = matches;
+        }
+
+        console.log("hydridMatches....");
+        console.log(hydridMatches);
+
+        // Render MP hydrid tree with matches for each model
+        renderMPTree('mpSvg', 'mp/mp_treemap.json', hydridMatches);
+    });
+    
+    jqxhr.fail(function () { 
+        console.log('Ajax error')
+    });
+};
+
 // MP Hydrid Tree
 var renderMPTree = function(svgId, json, hydridMatches) {
     // Set the dimensions and margins of the diagram
@@ -715,11 +717,14 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 	    return rootNode.data;
 	};
 
-
+    
 	// The principle behind d3.json() is to do everything in this function, 
 	// which will be executed when the json is loaded
 	d3.json(json, function(error, rootData) {
 	    if (error) throw error;
+        
+        // Create legend
+        createLegend(hydridMatches);
 
 	    // Add calculated matches to the rootData
 	    var rootDataWithHybridMatch = calculateHybridMatch(rootData, hydridMatches);
@@ -744,6 +749,54 @@ var renderMPTree = function(svgId, json, hydridMatches) {
 
 	    update(rootNode);	
 	});
+
+    // Create legend from mpdel labels/keys
+    var createLegend = function(hydridMatches) {
+    	// First construct legend data from keys
+    	var legendData = {};
+
+    	for (var key in hydridMatches) {
+            legendData[key] = color(key);
+    	}
+
+console.log("Legend data ...");
+console.log(d3.entries(legendData));
+
+        var legendRectSize = 10;
+        var legendSpacing = 2;
+
+        // Legend group
+        var legend = svg.selectAll('.legend')
+			.data(d3.entries(legendData))
+			.enter()
+			.append('g')
+			.attr('class', 'legend')
+			.attr("transform", function(d) {
+				return "translate(" + -100 + "," + 20 + ")";
+			});
+
+        // Legend rect
+        legend.append('rect')
+			.attr('x', 10)
+			.attr('y', function(d, i) {
+				return i * (legendRectSize + legendSpacing);
+			})
+			.attr('width', legendRectSize)
+			.attr('height', legendRectSize)
+			.style('fill', function(d) {
+				return d.value;
+			});
+
+        // Legend label text
+		legend.append('text')
+			.attr('x', 10 + legendRectSize + 2)
+			.attr('y', function(d, i) {
+				return i * (legendRectSize + legendSpacing) + 8;
+			})
+			.text(function(d) { 
+				return d.key; 
+			});
+    };
 
 
 	// Recurisively copy _children to children 
