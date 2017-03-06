@@ -199,10 +199,13 @@ var renderHPTree = function(svgId, json, sourceArr) {
 	    // Add new property _children to store grouping info
 	    nodeData._children = [];
 	    
-	    // Only add the noMatch grouping if there's matches and the count of matches is less than 
-	    // the count of children, 
-	    // and the node is not the actual matching node that contians no addition matches
-	    if ((nodeData.matchCount > 0) && (nodeData.matchCount < nodeData.children.length)) {
+	    // Only add noMatch group when the node contains at least one match
+        // and this node has more than 2 children
+        // and this node is not the actual matching node containing other matching nodes
+	    if ((nodeData.matchCount > 0) && (nodeData.children.length > 2)) {
+	    	// It's possible that a matching node contains additional matching nodes
+	    	// that's why we need to check `(nodeData.matchCount === 1) && nodeData.isMatch`
+	    	// to ensure this is the actual matching node containing no other matching nodes
 	    	if ((nodeData.matchCount === 1) && nodeData.isMatch) {
 	            nodeData._children = nodeData.children;
 	            for (var j = 0; j < nodeData.children.length; j++) {
@@ -835,6 +838,7 @@ console.log(d3.entries(legendData));
 
         // Only add noMatch group when the node contains at least one match
         // and this node has more than 2 children
+        // and this node is not the actual matching node containing other matching nodes
 	    if ((nodeData.totalMatchCount > 0) && (nodeData.children.length > 2)) {
 	    	// Get an array containing the property keys and values
 			var isMatchArr = d3.entries(nodeData.isMatch);
@@ -845,7 +849,8 @@ console.log(d3.entries(legendData));
 			});
 
             // No need to add noMatch group if this node is the actual matching node
-	    	if (filteredIsMatchArr.length > 0) {
+            // and this node contains no additional matching nodes
+	    	if (nodeData.totalMatchCount === filteredIsMatchArr.length) {
                 nodeData._children = nodeData.children;
 	            for (var j = 0; j < nodeData.children.length; j++) {
 			        buildHybridDOITree(nodeData.children[j]);
