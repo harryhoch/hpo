@@ -833,10 +833,9 @@ console.log(d3.entries(legendData));
 	    // Add new property _children to store grouping info
 	    nodeData._children = [];
 
-	    // Only add the noMatch grouping if there's matches and the count of matches is less than 
-	    // the count of children, 
-	    // and the node is not the actual matching node that contians no additional matches
-	    if ((nodeData.totalMatchCount > 0) && (nodeData.totalMatchCount < nodeData.children.length)) {
+        // Only add noMatch group when the node contains at least one match
+        // and this node has more than 2 children
+	    if ((nodeData.totalMatchCount > 0) && (nodeData.children.length > 2)) {
 	    	// Get an array containing the property keys and values
 			var isMatchArr = d3.entries(nodeData.isMatch);
 
@@ -845,6 +844,7 @@ console.log(d3.entries(legendData));
 				return item.value;
 			});
 
+            // No need to add noMatch group if this node is the actual matching node
 	    	if (filteredIsMatchArr.length > 0) {
                 nodeData._children = nodeData.children;
 	            for (var j = 0; j < nodeData.children.length; j++) {
