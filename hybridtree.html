@@ -255,9 +255,6 @@ var renderHPTree = function(svgId, json, sourceArr) {
 		// At this moment, rootNode is already the hierarchy
 		var treeData = tree(rootNode);
 
-	console.log("tree data");
-	console.log(treeData);
-
 		// Compute the new tree layout
 		// https://github.com/d3/d3-hierarchy/blob/master/README.md#node_descendants
 		// Returns the array of descendant nodes, starting with this node, then followed by each child in topological order.
@@ -580,15 +577,12 @@ var simSearch = function(sourceArr, targetGroupId) {
             
             var modelNumber = j + 1;
 
-            console.log("Matches array of model " + modelNumber);
+            console.log("Matches array of model - " + top3Models[j].label);
             console.log(matches);
 
             // Add to hybridMatches
             hybridMatches[top3Models[j].label] = matches;
         }
-
-        console.log("hybridMatches....");
-        console.log(hybridMatches);
 
         // Render MP hybrid tree with matches for each model
         renderMPTree('mpSvg', 'mp/mp_treemap.json', hybridMatches);
@@ -661,7 +655,7 @@ var renderMPTree = function(svgId, json, hybridMatches) {
 		    
 		    // Constructs a root node from the specified hierarchical data
 		    // Using sumByMatch aggregate the values (number of matches)
-		    // so we can identify the nodes that contain matches(HP ids of the patient)
+		    // so we can identify the nodes that contain matches
 		    // The returned node and each descendant has the following added properties: 
 		    // data, depth, height, parent, children, value
 		    var rootNode = d3.hierarchy(rootData)
@@ -707,9 +701,6 @@ var renderMPTree = function(svgId, json, hybridMatches) {
 		        // Also mark the actual matching node
 		        d.data.isMatch[key] = (sourceArr.indexOf(d.data.id) !== -1) ? true : false
 		    });
-
-		    console.log("Root data with matching count for mouse model: " + key);
-		    console.log(rootNode.data);
 
 		    rootData = rootNode.data;
 	    }
@@ -899,9 +890,6 @@ console.log(d3.entries(legendData));
 		// At this moment, rootNode is already the hierarchy
 		var treeData = tree(rootNode);
 
-	console.log("tree data");
-	console.log(treeData);
-
 		// Compute the new tree layout
 		// https://github.com/d3/d3-hierarchy/blob/master/README.md#node_descendants
 		// Returns the array of descendant nodes, starting with this node, then followed by each child in topological order.
@@ -987,9 +975,6 @@ console.log(d3.entries(legendData));
 				matchCountArr = matchCountArr.filter(function(item) {
 					return item.value > 0;
 				});
-
-				console.log("matchCountArr");
-				console.log(matchCountArr);
 
 				// Sort the data based on match count
 				// if each has only 1 match, no sort applied
