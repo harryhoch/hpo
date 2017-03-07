@@ -719,15 +719,19 @@ var renderMPTree = function(svgId, json, hybridMatches) {
 	// which will be executed when the json is loaded
 	d3.json(json, function(error, rootData) {
 	    if (error) throw error;
-        
-        // Create legend
-        createLegend(hybridMatches);
 
 	    // Add calculated matches to the rootData
 	    var rootDataWithHybridMatch = calculateHybridMatch(rootData, hybridMatches);
 
-	    buildHybridDOITree(rootDataWithHybridMatch);
+        // Create legend
+        // Use rootDataWithHybridMatch.matchCount instead of hybridMatches
+        // because matchCount only contains all the matches found in the MP tree,
+        // while hybridMatches may have HP ID mixed in the MP ID list due to 
+        // incorrect Simsearch results
+        createLegend(rootDataWithHybridMatch.matchCount);
 
+	    buildHybridDOITree(rootDataWithHybridMatch);
+ 
 	console.log("DOITree...");
 	console.log(rootDataWithHybridMatch);
 
@@ -748,14 +752,14 @@ var renderMPTree = function(svgId, json, hybridMatches) {
 	});
 
     // Create legend from mpdel labels/keys
-    var createLegend = function(hybridMatches) {
+    var createLegend = function(matchCountObj) {
     	// First construct legend data from keys
     	var legendData = {};
 
-    	for (var key in hybridMatches) {
+    	for (var key in matchCountObj) {
             var legend = {};
             legend.color = color(key);
-            legend.matchCount = hybridMatches[key].length;
+            legend.matchCount = matchCountObj[key];
 
             legendData[key] = legend;
     	}
