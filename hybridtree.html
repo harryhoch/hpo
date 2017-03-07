@@ -93,6 +93,9 @@ var renderHPTree = function(svgId, json, sourceArr) {
 	var i = 0;
 	var duration = 750;
 
+    // Node radius
+    var radius = 8;
+
     // The spacing between levels
     var levelSpacing = 70;
 
@@ -329,7 +332,7 @@ var renderHPTree = function(svgId, json, sourceArr) {
 
 		// Update the node attributes and style
 		nodeUpdate.select('.node-circle')
-			.attr('r', 6)
+			.attr('r', radius)
 			.style("fill", function(d) {
 				if (d.parent === null) {
 	                // Give root its own bg color
@@ -350,10 +353,10 @@ var renderHPTree = function(svgId, json, sourceArr) {
 
         // Update the no match group rect
 	    nodeUpdate.select('.node-rect')
-			.attr('x', -6) // -width/2 to center
-			.attr('y', -6) // -height/2 to center
-			.attr('width', 12)
-			.attr('height', 12)
+			.attr('x', -radius) // -width/2 to center
+			.attr('y', -radius) // -height/2 to center
+			.attr('width', radius * 2)
+			.attr('height', radius * 2)
 			.style("fill", function(d) {
 				if (d.parent === null) {
 	                // Give root its own bg color
@@ -627,6 +630,9 @@ var renderMPTree = function(svgId, json, hybridMatches) {
 	var i = 0;
 	var duration = 750;
 
+    // Node radius
+    var radius = 8;
+
     // The spacing between levels
     var levelSpacing = 70;
 
@@ -635,6 +641,8 @@ var renderMPTree = function(svgId, json, hybridMatches) {
 	var hasMatchBorderColor = "rgb(217, 217, 217)";
 	var hasNoMatchRegularBgColor = "rgb(176, 196, 222)";
 	var hasNoMatchLeafBgColor = "rgb(255, 255, 255)";
+
+	var isNotMatchPieBorderColor = "#fff"
 
 	// Declares a tree layout and assigns the size
 	var tree = d3.tree()
@@ -776,7 +784,6 @@ var renderMPTree = function(svgId, json, hybridMatches) {
 console.log("Sorted legend data ...");
 console.log(d3.entries(legendData));
 
-        var legendRectSize = 10;
         var legendSpacing = 2;
 
         // Legend group
@@ -790,22 +797,21 @@ console.log(d3.entries(legendData));
 			});
 
         // Legend rect
-        legend.append('rect')
-			.attr('x', 10)
-			.attr('y', function(d, i) {
-				return i * (legendRectSize + legendSpacing);
+        legend.append('circle')
+			.attr("r", radius)
+			.attr('cx', 10)
+			.attr('cy', function(d, i) {
+				return i * (radius * 2 + legendSpacing);
 			})
-			.attr('width', legendRectSize)
-			.attr('height', legendRectSize)
 			.style('fill', function(d) {
 				return d.value.color;
 			});
 
         // Legend label text
 		legend.append('text')
-			.attr('x', 10 + legendRectSize + 2)
+			.attr('x', 10 + radius + 2)
 			.attr('y', function(d, i) {
-				return i * (legendRectSize + legendSpacing) + 8;
+				return i * (radius * 2 + legendSpacing) + 3;
 			})
 			.text(function(d) { 
 				return d.key + " (" + d.value.matchCount + ")"; 
@@ -956,51 +962,78 @@ console.log(d3.entries(legendData));
 		    .append('circle')
 			.attr('class', 'node-circle');
 
-		// Use ellipse for the hybrid node
+		// Use nested rect for the hybrid node
 		nodeEnter.filter((function(d) {
 	        	return (d.parent !== null && d.data.id !== "HP_" && d.data.totalMatchCount > 0);
 	        }))
-		    .append('rect')
+		    .append('circle')
 			.attr('class', 'node-hybrid');
+
+
+        // Pie generator
+		var pie = d3.pie()
+			.value(function(d){
+				// Use this to size each pie
+				return d.value.matchCount;
+			})
+		    .sort(null);
+
+		var arc = d3.arc()
+			.innerRadius(0)
+			.outerRadius(radius);
 
         // Append mouse models after ellipse for the hybrid node
 		nodeEnter.filter((function(d) {
 	        	return (d.parent !== null && d.data.id !== "HP_" && d.data.totalMatchCount > 0);
 	        }))
+		    .append("g")
 		    .selectAll(".match-model")
-			// Can't just use .data(d3.entries(d.data.matchCount))
+			// Can't just use .data(d3.entries())
 			.data(function(d) {
+				var matchObj = {};
+				
+				// Associate matchCount and isMatch with model label (key)
+				for (var key in d.data.matchCount) {
+                    if (typeof(matchObj[key]) === 'undefined') {
+                    	matchObj[key] = {};
+                    }
+
+                    matchObj[key].matchCount = d.data.matchCount[key];
+                    // Will use this isMatch flag to decide if add matching border
+                    // this is useful when a matching node contains two+ models and 
+                    // not all models are the actual matches of this node, because
+                    // those modesl can be found in the children of this matching node
+                    matchObj[key].isMatch = d.data.isMatch[key];
+				}
+
 				// https://github.com/d3/d3-collection/blob/master/README.md#entries
 				// d3.entries() returns an array containing the property keys and values 
 				// of the specified object (an associative array)
-				var matchCountArr = d3.entries(d.data.matchCount);
+				var matchCountArr = d3.entries(matchObj);
 
 				// Only show model that has matches
 				matchCountArr = matchCountArr.filter(function(item) {
-					return item.value > 0;
+					return item.value.matchCount > 0;
 				});
 
 				// Sort the data based on match count
 				// if each has only 1 match, no sort applied
-                return matchCountArr.sort(function(a, b) {
-                    return d3.descending(a.value, b.value);
-                });
+                return pie(matchCountArr.sort(function(a, b) {
+                    return d3.descending(a.value.matchCount, b.value.matchCount);
+                }));
 			})
-			.enter().append("rect")
-			.attr("x", function(d, i) {
-				return 6 * i - 10;
-			})
-			.attr("y", -6)
-			.attr("width", 6)
-			.attr("height", 10)
+			.enter()
+			.append('path')
+			.attr('d', arc)
 			.attr("class", "match-model")
 			.style("fill", function(d) {
                 // Use different colors for each model
-                return color(d.key);
+                return color(d.data.key);
 			})
-			.text(function(d) { 
-				return (d.value > 0) ? d.key : ''; 
-			});
+			.style("stroke", function(d) {
+                return d.data.value.isMatch ? isMatchBorderColor : isNotMatchPieBorderColor;
+			})
+			.style("stroke-width", 1.5);
 	    
 	    // Use a rect for the no match group node
 	    nodeEnter.filter((function(d) {
@@ -1021,7 +1054,7 @@ console.log(d3.entries(legendData));
 
         // Update the node attributes and style
 		nodeUpdate.select('.node-circle')
-			.attr('r', 6)
+			.attr('r', radius)
 			.style("fill", function(d) {
 				if (d.parent === null) {
 	                // Give root its own bg color
@@ -1033,10 +1066,7 @@ console.log(d3.entries(legendData));
 
 		// Update the node attributes and style
 		nodeUpdate.select('.node-hybrid')
-			.attr('x', -11)
-			.attr('y', -7)
-			.attr('width', 20)
-			.attr('height', 12)
+			.attr('r', radius + 4)
 			.style("fill", "#fff")
 			.style("stroke", function(d) {
 				// Get an array containing the property keys and values
@@ -1058,16 +1088,16 @@ console.log(d3.entries(legendData));
 					return item.value;
 				});
 
-                return (filteredIsMatchArr.length > 0) ? 3 : 1.5;
+                return (filteredIsMatchArr.length > 0) ? 2 : 1.5;
 			});
 
 
         // Update the no match group rect
 	    nodeUpdate.select('.node-rect')
-			.attr('x', -6) // -width/2 to center
-			.attr('y', -6) // -height/2 to center
-			.attr('width', 12)
-			.attr('height', 12)
+			.attr('x', -radius) // -width/2 to center
+			.attr('y', -radius) // -height/2 to center
+			.attr('width', radius * 2)
+			.attr('height', radius * 2)
 			.style("fill", function(d) {
 				// Either leaf node or not. No match stuff here
 				return d._children ? hasNoMatchRegularBgColor : hasNoMatchLeafBgColor;	
