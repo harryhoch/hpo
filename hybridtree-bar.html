@@ -970,20 +970,12 @@ console.log(d3.entries(legendData));
 		    .append('rect')
 			.attr('class', 'node-hybrid');
 
-        // Stack generator
-        var stack = d3.stack()
-            .value(function(d){
-				// Use this to size each pie
-				return d.value.matchCount;
-			});
-
-
         // Append mouse models for the hybrid node
 		nodeEnter.filter((function(d) {
 	        	return (d.parent !== null && d.data.id !== "HP_" && d.data.totalMatchCount > 0);
 	        }))
 		    .append("g")
-		    .selectAll(".node-hybrid")
+		    .selectAll(".match-model")
 			// Can't just use .data(d3.entries())
 			.data(function(d) {
 				var matchObj = {};
@@ -1014,37 +1006,31 @@ console.log(d3.entries(legendData));
 
                 // Sort the data based on match count
 				// if each has only 1 match, no sort applied
-                matchCountArr = matchCountArr.sort(function(a, b) {
+                return matchCountArr.sort(function(a, b) {
                     return d3.descending(a.value.matchCount, b.value.matchCount);
                 })
-
-                var keys= [];
-				// Add to keys array for stack use
-				for (var i = 0; i < matchCountArr.length; i++) {
-                    keys.push(matchCountArr[i].key);
-				}
-
-                return stack.keys(keys)(matchCountArr);
 			})
 			.enter()
-			.selectAll(".match-model")
-			.data(function(d) { 
-				return d; 
-			})
-			.enter().append("rect")
+			.append("rect")
 			.attr("x", function(d, i) {
 				return 6 * i - 10;
 			})
 			.attr("y", -6)
 			.attr("width", 6)
-			.attr("height", 10)
+			.attr("height", function(d) { 
+				var y = d3.scaleLinear()
+					.domain([0, 3])
+		    		.range([0, 9]);
+
+				return y(d.value.matchCount); 
+			})
 			.attr("class", "match-model")
 			.style("fill", function(d) {
                 // Use different colors for each model
-                return color(d.data.key);
+                return color(d.key);
 			})
 			.style("stroke", function(d) {
-                return d.data.value.isMatch ? isMatchBorderColor : isNotMatchPieBorderColor;
+                return d.value.isMatch ? isMatchBorderColor : isNotMatchPieBorderColor;
 			})
 			.style("stroke-width", 1.5);
 	    
@@ -1081,8 +1067,8 @@ console.log(d3.entries(legendData));
 		nodeUpdate.select('.node-hybrid')
 			.attr('x', -13)
 			.attr('y', -9)
-			.attr('width', 24)
-			.attr('height', 16)
+			.attr('width', radius * 3)
+			.attr('height', radius * 2)
 			.style("fill", "#fff")
 			.style("stroke", function(d) {
 				// Get an array containing the property keys and values
