@@ -642,7 +642,7 @@ var renderMPTree = function(svgId, json, hybridMatches) {
 	var hasNoMatchRegularBgColor = "rgb(176, 196, 222)";
 	var hasNoMatchLeafBgColor = "rgb(255, 255, 255)";
 
-	var isNotMatchPieBorderColor = "#fff"
+	var isNotMatchPieBorderColor = "#fff";
 
 	// Declares a tree layout and assigns the size
 	var tree = d3.tree()
@@ -982,7 +982,7 @@ console.log(d3.entries(legendData));
 			.innerRadius(0)
 			.outerRadius(radius);
 
-        // Append mouse models after ellipse for the hybrid node
+        // Append mouse models for the hybrid node
 		nodeEnter.filter((function(d) {
 	        	return (d.parent !== null && d.data.id !== "HP_" && d.data.totalMatchCount > 0);
 	        }))
@@ -1261,7 +1261,6 @@ console.log(d3.entries(legendData));
 	}
 
 }
-
 
 simSearch(patientPhenotypes, '10090');
 
