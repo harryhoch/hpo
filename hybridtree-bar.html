@@ -976,8 +976,14 @@ console.log(d3.entries(legendData));
 	        }))
 		    .append("g")
 		    .selectAll(".match-model")
-			// Can't just use .data(d3.entries())
 			.data(function(d) {
+				var matchArr = d3.entries(d.data.matchCount);
+
+                // https://github.com/d3/d3-array/blob/master/README.md#max
+                var maxMatchCount = d3.max(matchArr, function(item) {
+                    return item.value;
+                });
+
 				var matchObj = {};
 				
 				// Associate matchCount and isMatch with model label (key)
@@ -992,6 +998,10 @@ console.log(d3.entries(legendData));
                     // not all models are the actual matches of this node, because
                     // those modesl can be found in the children of this matching node
                     matchObj[key].isMatch = d.data.isMatch[key];
+
+                    // Add the maxMatchCount to each datum so we can use it directly
+                    // when creating the scale domain.
+                    matchObj[key].maxMatchCount = maxMatchCount;
 				}
 
 				// https://github.com/d3/d3-collection/blob/master/README.md#entries
@@ -1018,9 +1028,14 @@ console.log(d3.entries(legendData));
 			.attr("y", -6)
 			.attr("width", 6)
 			.attr("height", function(d) { 
+				// Input! Domain!
+				// Output! Range!
 				var y = d3.scaleLinear()
-					.domain([0, 3])
-		    		.range([0, 9]);
+					// maxMatchCount is the max value across all models
+					// of the same node
+					// Must start from a number < 1
+					.domain([0, d.value.maxMatchCount])
+		    		.range([4, 10]);
 
 				return y(d.value.matchCount); 
 			})
