@@ -784,6 +784,7 @@ var renderMPTree = function(svgId, json, hybridMatches) {
 console.log("Sorted legend data ...");
 console.log(d3.entries(legendData));
 
+        var legendRectSize = 14;
         var legendSpacing = 2;
 
         // Legend group
@@ -800,19 +801,19 @@ console.log(d3.entries(legendData));
         legend.append('rect')
 			.attr('x', 10)
 			.attr('y', function(d, i) {
-				return i * (radius * 2 + legendSpacing);
+				return i * (legendRectSize + legendSpacing);
 			})
-			.attr('width', radius * 2)
-			.attr('height', radius * 2)
+			.attr('width', legendRectSize)
+			.attr('height', legendRectSize)
 			.style('fill', function(d) {
 				return d.value.color;
 			});
 
         // Legend label text
 		legend.append('text')
-			.attr('x', 10 + radius * 2 + 2)
+			.attr('x', 10 + legendRectSize + 2)
 			.attr('y', function(d, i) {
-				return i * (radius * 2 + legendSpacing) + 11;
+				return i * (legendRectSize + legendSpacing) + 10;
 			})
 			.text(function(d) { 
 				return d.key + " (" + d.value.matchCount + ")"; 
