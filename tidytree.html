@@ -12,21 +12,28 @@ padding:10px 20px;
 
 .node-group {
 cursor: pointer;
+
 }
 
 .node-circle,
 .node-rect {
 stroke: steelblue;
-stroke-width: 1.5px;
 }
 
-.node-label {
-font: 10px sans-serif;
+.nodelabel {
+fill: #cccccc;
 }
+
+
+.rootnodelabel {
+fill: #cccccc;
+}
+
+
 
 .link {
 fill: none;
-stroke: #ddd;
+stroke: #f0f0f0;
 stroke-width: 1.5px;
 }
 
@@ -42,7 +49,7 @@ stroke: rgb(255, 65, 54);
 <body>
 
 <div class="patientTree">
-<h3>Patient with undiagnoised disease</h3>
+<h3>Patient with undiagnosed disease</h3>
 <svg id= "hpSvg"></svg>
 </div>
 
@@ -61,7 +68,7 @@ stroke: rgb(255, 65, 54);
 <svg id= "mpSvg3"></svg>
 </div>
 
-<script>
+<script type="application/javascript">
 
 // A list of HP Ids from a patient with undiagnoised disease
 var patientPhenotypes = [
@@ -142,7 +149,7 @@ var treeRender = function(svgId, json, sourceArr) {
     // Set the dimensions and margins of the diagram
 	var margin = {top: 20, right: 90, bottom: 30, left: 200};
 	var width = 1060 - margin.left - margin.right;
-	var height = 300 - margin.top - margin.bottom;
+	var height = 200 - margin.top - margin.bottom;
 
 	// append the svg object to the body of the page
 	// appends a 'group' element to 'svg'
@@ -160,7 +167,7 @@ var treeRender = function(svgId, json, sourceArr) {
 	var duration = 750;
 
     // The spacing between levels
-    var levelSpacing = 70;
+    var levelSpacing = 40;
 
 	var rootBgColor = "rgb(152, 121, 176)";
 	var isMatchBgColor = "rgb(100, 163, 72)";
@@ -168,11 +175,17 @@ var treeRender = function(svgId, json, sourceArr) {
 	var hasNoMatchRegularBgColor = "rgb(176, 196, 222)";
 	var hasNoMatchLeafBgColor = "rgb(255, 255, 255)";
 
+	var noMatchWidth = 6;
+	var noMatchHeight = 6;
+	var matchNodeRadius =4;			
+				
+
 	// Declares a tree layout and assigns the size
 	var tree = d3.tree()
 	    // Don't use .nodeSize(), it causes some nodes go out of the svg boundry
 	    // and it requres to adjust each node x and y since the root is positioned at <0, 0>
-		.size([height, width]);
+		.size([height, width])
+		.separation(function(a,b) {console.log("calling separation");return 1;});
 
 	// Modify the provided root data by adding maching info
 	var calculateMatch = function(rootData, sourceArr) {
@@ -273,14 +286,15 @@ var treeRender = function(svgId, json, sourceArr) {
 	    	// that's why we need to check `(nodeData.matchCount === 1) && nodeData.isMatch`
 	    	// to ensure this is the actual matching node containing no other matching nodes
 	    	if ((nodeData.matchCount === 1) && nodeData.isMatch) {
+			    // this  node matches
 	            nodeData._children = nodeData.children;
 	            for (var j = 0; j < nodeData.children.length; j++) {
 			        buildDOITree(nodeData.children[j]);
 			    }
-	    	} else {
+	    	} else { // doesn't match
 	    		var noMatch = {};
 			    noMatch.id = "HP_";
-			    noMatch.name = "No Match Group";
+			    noMatch.name = "No Matches";
 			    noMatch._children = [];
 
 		        nodeData._children.push(noMatch);
@@ -295,13 +309,13 @@ var treeRender = function(svgId, json, sourceArr) {
 
 			        buildDOITree(nodeData.children[i]);
 			    }
-	    	}
-	    } else {
-	        nodeData._children = nodeData.children;
-	        for (var j = 0; j < nodeData.children.length; j++) {
-		        buildDOITree(nodeData.children[j]);
+	    		}
+		} else { // no match or number of matches > # of children
+			nodeData._children = nodeData.children;
+			for (var j = 0; j < nodeData.children.length; j++) {
+					    buildDOITree(nodeData.children[j]);
 		    }
-	    }
+	        }				    
 
 	    delete nodeData.children;
 	}
@@ -317,6 +331,7 @@ var treeRender = function(svgId, json, sourceArr) {
 	}
 
 	function update(source) {
+	       console.log("updating source x is .."+source.x0);
 		// Assigns the x and y position for the nodes
 		// At this moment, rootNode is already the hierarchy
 		var treeData = tree(rootNode);
@@ -353,6 +368,7 @@ var treeRender = function(svgId, json, sourceArr) {
 				return svgId + "_" + d.data.id;
 			})
 			.attr("transform", function(d) {
+				    console.log("translating to x is "+source.x0);
 				return "translate(" + source.y0 + "," + source.x0 + ")";
 			})
 			.on('click', click)
@@ -378,13 +394,14 @@ var treeRender = function(svgId, json, sourceArr) {
 	        	// Find the root node
 	        	return (d.parent == null);
 	        }))
-			.append('text')
+   		        .append('text')
 			.attr("x", -12)
 			.attr("y", 3)
 			.attr("text-anchor", "end")
 			.text(function(d) { 
 				return d.data.name; 
-			});
+				    })
+		        .classed("rootnodelabel",true);
 
 		// Merge the enter and update selections after a data-join
 		var nodeUpdate = nodeEnter.merge(node);
@@ -393,12 +410,13 @@ var treeRender = function(svgId, json, sourceArr) {
 		nodeUpdate.transition()
 			.duration(duration)
 			.attr("transform", function(d) { 
+			console.log("node update... transition.."+d.x);
 				return "translate(" + d.y + "," + d.x + ")";
 			});
 
 		// Update the node attributes and style
 		nodeUpdate.select('.node-circle')
-			.attr('r', 6)
+			.attr('r', matchNodeRadius)
 			.style("fill", function(d) {
 				if (d.parent === null) {
 	                // Give root its own bg color
@@ -417,12 +435,15 @@ var treeRender = function(svgId, json, sourceArr) {
 		    	}
 			});
 
-        // Update the no match group rect
+	// Update the no match group rect
+	var noMatchXOffset = -(noMatchWidth/2);
+	var noMatchYOffset = -(noMatchHeight/2);
+					
 	    nodeUpdate.select('.node-rect')
-			.attr('x', -6) // -width/2 to center
-			.attr('y', -6) // -height/2 to center
-			.attr('width', 12)
-			.attr('height', 12)
+			.attr('x', noMatchXOffset) // -width/2 to center
+			.attr('y', noMatchYOffset) // -height/2 to center
+			.attr('width', noMatchWidth)
+			.attr('height', noMatchHeight)
 			.style("fill", function(d) {
 				if (d.parent === null) {
 	                // Give root its own bg color
@@ -445,6 +466,8 @@ var treeRender = function(svgId, json, sourceArr) {
 		var nodeExit = node.exit().transition()
 			.duration(duration)
 			.attr("transform", function(d) {
+								    
+				console.log("translate to .."+source.x);			    
 				return "translate(" + source.y + "," + source.x + ")";
 			})
 			.remove();
@@ -502,6 +525,7 @@ var treeRender = function(svgId, json, sourceArr) {
 
 		// Store the old positions for transition.
 		nodes.forEach(function(d) {
+                        console.log("d.x is ..."+d.y);								     
 			d.x0 = d.x;
 			d.y0 = d.y;
 		});
@@ -533,6 +557,7 @@ var treeRender = function(svgId, json, sourceArr) {
 				    d._children = null;
 				} 
 			}
+                        console.log("in clcik update to .."+d.x);								
 
 			update(d);
 		}
@@ -546,47 +571,55 @@ var treeRender = function(svgId, json, sourceArr) {
 			// Remove the root node
 			var targetNodes = nodes.slice(0, nodes.length - 1);
 
-	        svg.selectAll(".node-label")
+	        svg.selectAll(".nodelabel")
 				.data(targetNodes)
-				.enter()
+   			        .enter()
 				.append('text')
 				.attr("x", function(d) {
 					return (d.children || d._children) ? -12 : + 12;
 				})
-				.attr("y", 3)
+  	                        .attr("y", 3)
 				.attr("transform", function(d) {
 					// In many times, rotating the label text makes the label cropped by SVG boundry
 					// it can still create overlappings
 					//return "translate(" + d.y0 + "," + d.x0 + ") rotate(45)";
 					return "translate(" + d.y0 + "," + d.x0 + ")";
 				})
-				.attr("class", "node-label")
+
 				.attr("text-anchor", function(d) {
 					// Place label on left if node has children,
 					// otherwise on right of the node
 					return (d.children || d._children) ? "end" : "start";
-				})
+								    })
+			//	.style('fill','rgb(0,0,255,0.5)')
 				.text(function(d) { 
 					// Show the HP ID of real node
-					// Show the size of no match group node
-					return (d.data.id !== "HP_") ? d.data.name + " [" + d.data.id + "]" : d.data.name + " (" + d.data.children.length + ")"; 
-				});
+					// Show the size of no match  group node
+			//	    return (d.data.id !== "HP_")
+			//	    ?d.data.name + " [" + d.data.id + "]"
+			//		    :.data.name + " (" +
+			//	d.data.children.length + ")"; 
+				    return d.data.name + " (" +
+					d.data.matchCount + ")";
+					// was d.data.children.length
+								    })
+			        .classed("nodelabel",true);
 
 			// Highlight the path
-			highlightPathToRoot(node, true);
+		//	highlightPathToRoot(node, true);
 		}
 
 	    // Remove all labels of ancestors nodes except the root node
 		function mouseout(node) {
 			// The root node label text has no class
-			// so no worries here just to remove all .node-label
-		    svg.selectAll(".node-label").remove();
+			// so no worries here just to remove all .nodelabel
+		    svg.selectAll(".nodelabel").remove();
 
 		    // Also dehighlight the path
 		    highlightPathToRoot(node, false);
 		}
 
-		function highlightPathToRoot(node, bool) {
+		function highlightPathTo`Root(node, bool) {
 			var nodes = node.ancestors();
 			// Remove the root node
 			var targetNodes = nodes.slice(0, nodes.length - 1);
